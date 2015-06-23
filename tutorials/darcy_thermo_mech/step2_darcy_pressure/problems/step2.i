@@ -10,7 +10,7 @@
 [Variables]
   [./pressure]
     # Scaling this example up helps with convergence issues due to the small permeability
-    scaling = 1e4
+    # scaling = 1e4
   [../]
 []
 
@@ -45,10 +45,17 @@
 
 [Executioner]
   type = Steady
-  solve_type = PJFNK
+  
+  # The linear and nonlinear residuals agree perfectly if we use
+  # solve_type = NEWTON for this example. So is the issue something
+  # with computing the action of the Jacobian slightly incorrectly
+  # with PJFNK, perhaps due to finite differencing parameters?
+  # Variable scaling is also unnecessary if we use solve_type = NEWTON.
+  # solve_type = PJFNK
+  solve_type = NEWTON
   petsc_options_iname = '-pc_type -pc_hypre_type'
   petsc_options_value = 'hypre boomeramg'
-  l_tol = 1.e-10
+  l_tol = 1.e-12
 []
 
 [Outputs]
