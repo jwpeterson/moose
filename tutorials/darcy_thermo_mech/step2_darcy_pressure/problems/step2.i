@@ -9,6 +9,8 @@
 
 [Variables]
   [./pressure]
+    # Scaling this example up helps with convergence issues due to the small permeability
+    scaling = 1e6
   [../]
 []
 
