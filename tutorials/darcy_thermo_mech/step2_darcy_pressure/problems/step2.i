@@ -10,7 +10,7 @@
 [Variables]
   [./pressure]
     # Scaling this example up helps with convergence issues due to the small permeability
-    scaling = 1e6
+    scaling = 1e4
   [../]
 []
 
@@ -48,6 +48,7 @@
   solve_type = PJFNK
   petsc_options_iname = '-pc_type -pc_hypre_type'
   petsc_options_value = 'hypre boomeramg'
+  l_tol = 1.e-10
 []
 
 [Outputs]
