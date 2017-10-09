@@ -12,7 +12,6 @@
 []
 
 [Problem]
-  coord_type = RZ
 []
 
 [Preconditioning]
@@ -24,23 +23,23 @@
 []
 
 [Executioner]
-  type = Steady
-  # dt = 0.005
-  # dtmin = 0.005
-  # num_steps = 5
-  # l_max_its = 100
+  type = Transient
+  dt = 0.005
+  dtmin = 0.005
+  num_steps = 5
+  l_max_its = 100
 
   # Note: The Steady executioner can be used for this problem, if you
   # drop the INSMomentumTimeDerivative kernels and use the following
   # direct solver options.
-  petsc_options_iname = '-pc_type -pc_factor_shift_type -pc_factor_shift_amount'
-  petsc_options_value = 'lu NONZERO 1.e-10'
+  # petsc_options_iname = '-pc_type -pc_factor_shift_type -pc_factor_shift_amount -ksp_type'
+  # petsc_options_value = 'lu NONZERO 1.e-10 preonly'
 
-  # # Block Jacobi works well for this problem, as does "-pc_type asm
-  # # -pc_asm_overlap 2", but an overlap of 1 does not work for some
-  # # reason?
-  # petsc_options_iname = '-pc_type -sub_pc_type -sub_pc_factor_levels'
-  # petsc_options_value = 'bjacobi  ilu          4'
+  # Block Jacobi works well for this problem, as does "-pc_type asm
+  # -pc_asm_overlap 2", but an overlap of 1 does not work for some
+  # reason?
+  petsc_options_iname = '-pc_type -sub_pc_type -sub_pc_factor_levels'
+  petsc_options_value = 'bjacobi  ilu          4'
 
   nl_rel_tol = 1e-12
   nl_max_its = 6
@@ -100,23 +99,23 @@
 
 
 [Kernels]
-  # [./x_momentum_time]
-  #   type = INSMomentumTimeDerivative
-  #   variable = vel_x
-  # [../]
-  # [./y_momentum_time]
-  #   type = INSMomentumTimeDerivative
-  #   variable = vel_y
-  # [../]
+  [./x_momentum_time]
+    type = INSMomentumTimeDerivative
+    variable = vel_x
+  [../]
+  [./y_momentum_time]
+    type = INSMomentumTimeDerivative
+    variable = vel_y
+  [../]
   [./mass]
-    type = INSMassRZ
+    type = INSMass
     variable = p
     u = vel_x
     v = vel_y
     p = p
   [../]
   [./x_momentum_space]
-    type = INSMomentumLaplaceFormRZ
+    type = INSMomentumLaplaceForm
     variable = vel_x
     u = vel_x
     v = vel_y
@@ -124,7 +123,7 @@
     component = 0
   [../]
   [./y_momentum_space]
-    type = INSMomentumLaplaceFormRZ
+    type = INSMomentumLaplaceForm
     variable = vel_y
     u = vel_x
     v = vel_y
@@ -151,7 +150,7 @@
 
 [Postprocessors]
   [./flow_in]
-    type = VolumetricFlowRate
+    type = XYZVolumetricFlowRate
     vel_x = vel_x
     vel_y = vel_y
     boundary = 'bottom'
@@ -159,7 +158,7 @@
     execute_on = 'timestep_end'
   [../]
   [./flow_out]
-    type = VolumetricFlowRate
+    type = XYZVolumetricFlowRate
     vel_x = vel_x
     vel_y = vel_y
     boundary = 'top'
