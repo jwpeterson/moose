@@ -19,7 +19,8 @@ rho=1
 []
 
 [Mesh]
-  file = first_order_flow_refined.msh
+  # file = first_order_flow_refined.msh
+  file = sphere_hybrid_rev2.e
 []
 
 [Variables]
@@ -115,7 +116,6 @@ rho=1
 [Materials]
   [./const]
     type = GenericConstantMaterial
-    block = flow_domain
     prop_names = 'rho mu'
     prop_values = '${rho}  ${mu}'
   [../]
