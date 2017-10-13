@@ -4,7 +4,14 @@
 # .) Integrating the pressure by parts.
 # .) Natural boundary condition at the outlet.
 [GlobalParams]
+  mu=1
+  rho=1
   gravity = '0 0 0'
+
+  # Stabilization parameters
+  # supg = true
+  # pspg = true
+  # alpha = 1
 []
 
 [Mesh]
@@ -138,7 +145,7 @@
     type = GenericConstantMaterial
     block = 'volume'
     prop_names = 'rho mu'
-    prop_values = '1  1'
+    prop_values = '${GlobalParams/rho} ${GlobalParams/mu}'
   [../]
 []
 
