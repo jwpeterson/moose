@@ -13,6 +13,10 @@
   Re = 30
   K = -9.78221333616
   f = f_theta
+
+  # Stabilization parameters
+  # pspg = true
+  # alpha = 1
 []
 
 [Mesh]
@@ -27,6 +31,8 @@
   # file = wedge_16x24_QUAD4.e
   # file = wedge_32x48_QUAD4.e
   # file = wedge_64x96_QUAD4.e
+  # file = wedge_128x192_QUAD4.e
+  # file = wedge_256x384_QUAD4.e
 []
 
 [MeshModifiers]
@@ -44,11 +50,11 @@
 
 [Variables]
   [./vel_x]
-    order = SECOND
+    # order = SECOND
     family = LAGRANGE
   [../]
   [./vel_y]
-    order = SECOND
+    # order = SECOND
     family = LAGRANGE
   [../]
   [./p]
