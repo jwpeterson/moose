@@ -134,7 +134,7 @@
 []
 
 [Preconditioning]
-  [./SMP_PJFNK]
+  [./SMP]
     type = SMP
     full = true
     solve_type = NEWTON
