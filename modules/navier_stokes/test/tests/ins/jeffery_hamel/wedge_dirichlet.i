@@ -1,6 +1,8 @@
 # This input file tests whether we can converge to the semi-analytical
 # solution for flow in a 2D wedge.
 [GlobalParams]
+  mu=1
+  rho=1
   gravity = '0 0 0'
 
   # Params used by the WedgeFunction for computing the exact solution.
@@ -19,6 +21,12 @@
   # file = wedge_16x24.e
   # file = wedge_32x48.e
   # file = wedge_64x96.e
+
+  # file = wedge_4x6_QUAD4.e
+  # file = wedge_8x12_QUAD4.e
+  # file = wedge_16x24_QUAD4.e
+  # file = wedge_32x48_QUAD4.e
+  # file = wedge_64x96_QUAD4.e
 []
 
 [MeshModifiers]
@@ -121,7 +129,7 @@
     type = GenericConstantMaterial
     block = 1
     prop_names = 'rho mu'
-    prop_values = '1  1'
+    prop_values = '${GlobalParams/rho} ${GlobalParams/mu}'
   [../]
 []
 
@@ -166,20 +174,14 @@
   [./vel_x_exact]
     type = WedgeFunction
     var_num = 0
-    mu = 1
-    rho = 1
   [../]
   [./vel_y_exact]
     type = WedgeFunction
     var_num = 1
-    mu = 1
-    rho = 1
   [../]
   [./p_exact]
     type = WedgeFunction
     var_num = 2
-    mu = 1
-    rho = 1
   [../]
 []
 
