@@ -14,6 +14,9 @@ reset
 # Number of cells in the r-direction.  Default=12.
 # {my_interval_r = 12}
 
+# The type of elements to use. Can be 'QUAD4' or 'QUAD9'
+# {elem_type = 'QUAD4'}
+
 ################################################################################
 
 # First create annulus
@@ -55,8 +58,8 @@ sideset 4 name 'inlet'
 # Export the mesh as QUAD9s.  On OSX, this mesh is written to
 # ~/Documents by default.
 block 1 surf 6
-block 1 element type QUAD9
-export mesh "wedge_{my_interval_theta}x{my_interval_r}.e" dimension 2 block 1 overwrite
+block 1 element type {elem_type}
+export mesh "wedge_{my_interval_theta}x{my_interval_r}_{elem_type}.e" dimension 2 block 1 overwrite
 
 # Local Variables:
 # mode: shell-script
