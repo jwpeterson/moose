@@ -43,6 +43,9 @@
     growth_factor = 1.2
     optimal_iterations = 5
   [../]
+  trans_ss_check = true
+  ss_check_tol = 1e-10
+
   dtmin = 0.001
   num_steps = 1000
   l_max_its = 300
@@ -67,7 +70,7 @@
   # steps, so it may not be the best approach when an expensive preconditioner is being
   # used.
   petsc_options = '-snes_ksp_ew'
-  
+
   nl_rel_tol = 1e-12
   nl_abs_tol = 1e-14
   nl_max_its = 20
