@@ -7,11 +7,11 @@
   # mu=1       # Re=1/2
   # mu=.5e-2   # Re=100
   # mu=1e-3    # Re=500
-  # mu=.5e-3   # Re=1000
+  mu=.5e-3   # Re=1000
   # mu=2.5e-4  # Re=2000
   # mu=1.67e-4 # Re=2994
   # mu=1.25e-4 # Re=4000
-  mu=1.e-4   # Re=5000
+  # mu=1.e-4   # Re=5000
   rho=1
   gravity = '0 0 0'
 
@@ -23,8 +23,8 @@
 
 [Mesh]
   # file = '2d_cone.msh'
-  file = 'cone_linear.e'
-  # file = 'cone_quadratic.e'
+  # file = 'cone_linear.e'
+  file = 'cone_quadratic.e'
   # This version of the quadratic mesh happens to not have
   # a Tri6 with all three vertices on the boundary, but this does not seem to have
   # any effect on the simulation... the only thing that matters is apparently the
@@ -65,8 +65,8 @@
   # Note: The Steady executioner can be used for this problem, if you
   # drop the INSMomentumTimeDerivative kernels and use the following
   # direct solver options.
-  petsc_options_iname = '-pc_type -pc_factor_shift_type -pc_factor_shift_amount'
-  petsc_options_value = 'lu NONZERO 1.e-10'
+  # petsc_options_iname = '-pc_type -pc_factor_shift_type -pc_factor_shift_amount'
+  # petsc_options_value = 'lu NONZERO 1.e-10'
 
   # Block Jacobi works well for this problem, as does "-pc_type asm
   # -pc_asm_overlap 2", but an overlap of 1 does not work for some
@@ -74,14 +74,17 @@
   # petsc_options_iname = '-pc_type -sub_pc_type -sub_pc_factor_levels'
   # petsc_options_value = 'bjacobi  ilu          4'
 
-  # petsc_options_iname = '-pc_type -pc_asm_overlap -sub_pc_type -sub_pc_factor_levels'
-  # petsc_options_value = 'asm      2               ilu          3'
+  petsc_options_iname = '-pc_type -pc_asm_overlap -sub_pc_type -sub_pc_factor_levels'
+  petsc_options_value = 'asm      2               ilu          4'
 
   # Set the linear tolerance dynamically based on Eisenstat-Walker formula. This is
   # only relevant when not using a direct solver. It generally requires more nonlinear
   # steps, so it may not be the best approach when an expensive preconditioner is being
-  # used.
-  petsc_options = '-snes_ksp_ew'
+  # used. I have also seen it get stuck when the nonlinear residual is relatively large
+  # while not solving the linear systems to a small enough tolerance to make any progress
+  # in the nonlinear residuals...
+  l_tol = 1.e-6
+  # petsc_options = '-snes_ksp_ew'
 
   # When we tried to get to Re~3000 (mu=1.67e-4) I ran into trouble achieving 12
   # orders of relative residual reduction, so I dropped it to 1e-9.
@@ -101,13 +104,14 @@
 [Variables]
   [./vel_x]
     # Velocity in radial (r) direction
-    # order = SECOND
+    order = SECOND
   [../]
   [./vel_y]
     # Velocity in axial (z) direction
-    # order = SECOND
+    order = SECOND
   [../]
   [./p]
+    order = SECOND
   [../]
 []
 
