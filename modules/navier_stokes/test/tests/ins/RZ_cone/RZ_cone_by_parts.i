@@ -49,7 +49,7 @@
   # dt = 0.005
 
   [./TimeStepper]
-    dt = .001
+    dt = .005
     type = IterationAdaptiveDT
     cutback_factor = 0.4
     growth_factor = 1.2
@@ -58,15 +58,15 @@
   trans_ss_check = true
   ss_check_tol = 1e-10
 
-  dtmin = 1.e-4
+  dtmin = .005
   num_steps = 1000
   l_max_its = 300
 
   # Note: The Steady executioner can be used for this problem, if you
   # drop the INSMomentumTimeDerivative kernels and use the following
   # direct solver options.
-  # petsc_options_iname = '-pc_type -pc_factor_shift_type -pc_factor_shift_amount'
-  # petsc_options_value = 'lu NONZERO 1.e-10'
+  petsc_options_iname = '-pc_type -pc_factor_shift_type -pc_factor_shift_amount'
+  petsc_options_value = 'lu NONZERO 1.e-10'
 
   # Block Jacobi works well for this problem, as does "-pc_type asm
   # -pc_asm_overlap 2", but an overlap of 1 does not work for some
@@ -74,8 +74,8 @@
   # petsc_options_iname = '-pc_type -sub_pc_type -sub_pc_factor_levels'
   # petsc_options_value = 'bjacobi  ilu          4'
 
-  petsc_options_iname = '-pc_type -pc_asm_overlap -sub_pc_type -sub_pc_factor_levels'
-  petsc_options_value = 'asm      2               ilu          4'
+  # petsc_options_iname = '-pc_type -pc_asm_overlap -sub_pc_type -sub_pc_factor_levels'
+  # petsc_options_value = 'asm      2               ilu          4'
 
   # Set the linear tolerance dynamically based on Eisenstat-Walker formula. This is
   # only relevant when not using a direct solver. It generally requires more nonlinear
