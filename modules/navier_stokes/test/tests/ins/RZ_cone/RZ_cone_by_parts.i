@@ -7,7 +7,9 @@
   # mu=1       # Re=1/2
   # mu=.5e-2   # Re=100
   # mu=1e-3    # Re=500
-  mu=.5e-3     # Re=1000
+  # mu=.5e-3   # Re=1000
+  # mu=2.5e-4  # Re=2000
+  mu=1.67e-4   # Re=2994
   rho=1
   gravity = '0 0 0'
 
@@ -45,7 +47,7 @@
   # dt = 0.005
 
   [./TimeStepper]
-    dt = .005
+    dt = .001
     type = IterationAdaptiveDT
     cutback_factor = 0.4
     growth_factor = 1.2
@@ -54,7 +56,7 @@
   trans_ss_check = true
   ss_check_tol = 1e-10
 
-  dtmin = 0.001
+  dtmin = 1.e-4
   num_steps = 1000
   l_max_its = 300
 
@@ -79,7 +81,9 @@
   # used.
   petsc_options = '-snes_ksp_ew'
 
-  nl_rel_tol = 1e-12
+  # When we tried to get to Re~3000 (mu=1.67e-4) I ran into trouble achieving 12
+  # orders of relative residual reduction, so I dropped it to 1e-9.
+  nl_rel_tol = 1e-9
   nl_abs_tol = 1e-14
   nl_max_its = 20
 []
