@@ -4,7 +4,9 @@
 # .) Integrating the pressure by parts.
 # .) Natural boundary condition at the outlet.
 [GlobalParams]
-  mu=.5e-2
+  # mu=.5e-2  # Re=100
+  mu=1e-3     # Re=500
+  # mu=1      # Re=1/2
   rho=1
   gravity = '0 0 0'
 
@@ -18,6 +20,11 @@
   # file = '2d_cone.msh'
   file = 'cone_linear.e'
   # file = 'cone_quadratic.e'
+  # This version of the quadratic mesh happens to not have
+  # a Tri6 with all three vertices on the boundary, but this does not seem to have
+  # any effect on the simulation... the only thing that matters is apparently the
+  # Reynolds number.
+  # file = 'cone_quadratic_qtri.e'
 []
 
 [Problem]
@@ -87,16 +94,13 @@
 [Variables]
   [./vel_x]
     # Velocity in radial (r) direction
-    family = LAGRANGE
     # order = SECOND
   [../]
   [./vel_y]
     # Velocity in axial (z) direction
-    family = LAGRANGE
     # order = SECOND
   [../]
   [./p]
-    family = LAGRANGE
   [../]
 []
 
