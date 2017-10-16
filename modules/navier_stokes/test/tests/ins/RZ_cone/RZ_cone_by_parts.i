@@ -4,18 +4,20 @@
 # .) Integrating the pressure by parts.
 # .) Natural boundary condition at the outlet.
 [GlobalParams]
-  mu=1
+  mu=.5e-2
   rho=1
   gravity = '0 0 0'
 
   # Stabilization parameters
-  # supg = true
-  # pspg = true
-  # alpha = 1
+  supg = true
+  pspg = true
+  alpha = 1
 []
 
 [Mesh]
-  file = '2d_cone.msh'
+  # file = '2d_cone.msh'
+  file = 'cone_linear.e'
+  # file = 'cone_quadratic.e'
 []
 
 [Problem]
@@ -23,7 +25,7 @@
 []
 
 [Preconditioning]
-  [./SMP_PJFNK]
+  [./SMP]
     type = SMP
     full = true
     solve_type = Newton
@@ -31,11 +33,19 @@
 []
 
 [Executioner]
-  type = Steady
+  type = Transient
   # dt = 0.005
-  # dtmin = 0.005
-  # num_steps = 5
-  # l_max_its = 100
+
+  [./TimeStepper]
+    dt = .005
+    type = IterationAdaptiveDT
+    cutback_factor = 0.4
+    growth_factor = 1.2
+    optimal_iterations = 5
+  [../]
+  dtmin = 0.001
+  num_steps = 1000
+  l_max_its = 300
 
   # Note: The Steady executioner can be used for this problem, if you
   # drop the INSMomentumTimeDerivative kernels and use the following
@@ -43,14 +53,24 @@
   petsc_options_iname = '-pc_type -pc_factor_shift_type -pc_factor_shift_amount'
   petsc_options_value = 'lu NONZERO 1.e-10'
 
-  # # Block Jacobi works well for this problem, as does "-pc_type asm
-  # # -pc_asm_overlap 2", but an overlap of 1 does not work for some
-  # # reason?
+  # Block Jacobi works well for this problem, as does "-pc_type asm
+  # -pc_asm_overlap 2", but an overlap of 1 does not work for some
+  # reason?
   # petsc_options_iname = '-pc_type -sub_pc_type -sub_pc_factor_levels'
   # petsc_options_value = 'bjacobi  ilu          4'
 
+  # petsc_options_iname = '-pc_type -pc_asm_overlap -sub_pc_type -sub_pc_factor_levels'
+  # petsc_options_value = 'asm      2               ilu          3'
+
+  # Set the linear tolerance dynamically based on Eisenstat-Walker formula. This is
+  # only relevant when not using a direct solver. It generally requires more nonlinear
+  # steps, so it may not be the best approach when an expensive preconditioner is being
+  # used.
+  petsc_options = '-snes_ksp_ew'
+  
   nl_rel_tol = 1e-12
-  nl_max_its = 6
+  nl_abs_tol = 1e-14
+  nl_max_its = 20
 []
 
 [Outputs]
@@ -65,16 +85,15 @@
   [./vel_x]
     # Velocity in radial (r) direction
     family = LAGRANGE
-    order = SECOND
+    # order = SECOND
   [../]
   [./vel_y]
     # Velocity in axial (z) direction
     family = LAGRANGE
-    order = SECOND
+    # order = SECOND
   [../]
   [./p]
     family = LAGRANGE
-    order = FIRST
   [../]
 []
 
@@ -107,14 +126,14 @@
 
 
 [Kernels]
-  # [./x_momentum_time]
-  #   type = INSMomentumTimeDerivative
-  #   variable = vel_x
-  # [../]
-  # [./y_momentum_time]
-  #   type = INSMomentumTimeDerivative
-  #   variable = vel_y
-  # [../]
+  [./x_momentum_time]
+    type = INSMomentumTimeDerivative
+    variable = vel_x
+  [../]
+  [./y_momentum_time]
+    type = INSMomentumTimeDerivative
+    variable = vel_y
+  [../]
   [./mass]
     type = INSMassRZ
     variable = p
@@ -143,7 +162,6 @@
 [Materials]
   [./const]
     type = GenericConstantMaterial
-    block = 'volume'
     prop_names = 'rho mu'
     prop_values = '${GlobalParams/rho} ${GlobalParams/mu}'
   [../]
