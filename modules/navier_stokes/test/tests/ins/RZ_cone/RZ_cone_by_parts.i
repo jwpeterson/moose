@@ -48,6 +48,11 @@
   type = Transient
   # dt = 0.005
 
+  # I also tried a P^2-P^2 with PSPG and SUPG stabilization active,
+  # and there seems to be almost a timestep restriction for this
+  # case. Several times when the adaptive timestepper would increase
+  # the timestep, it would cause the next solve to fail. I'm not sure
+  # what the cause of this behavior might be.
   [./TimeStepper]
     dt = .005
     type = IterationAdaptiveDT
@@ -58,7 +63,7 @@
   trans_ss_check = true
   ss_check_tol = 1e-10
 
-  dtmin = .005
+  dtmin = 1.e-4
   num_steps = 1000
   l_max_its = 300
 
