@@ -24,12 +24,17 @@
 [Mesh]
   # file = '2d_cone.msh'
   # file = 'cone_linear.e'
-  file = 'cone_quadratic.e'
+  # file = 'cone_quadratic.e'
   # This version of the quadratic mesh happens to not have
   # a Tri6 with all three vertices on the boundary, but this does not seem to have
   # any effect on the simulation... the only thing that matters is apparently the
   # Reynolds number.
   # file = 'cone_quadratic_qtri.e'
+
+  # The all-tri version of the cone mesh. The name reflects the number of elements.
+  # file = 'cone_linear_alltri_9456.e'
+  file = 'cone_linear_alltri_21543.e'
+  # file = 'cone_linear_alltri_86212.e'
 []
 
 [Problem]
@@ -70,8 +75,8 @@
   # Note: The Steady executioner can be used for this problem, if you
   # drop the INSMomentumTimeDerivative kernels and use the following
   # direct solver options.
-  petsc_options_iname = '-pc_type -pc_factor_shift_type -pc_factor_shift_amount'
-  petsc_options_value = 'lu NONZERO 1.e-10'
+  # petsc_options_iname = '-pc_type -pc_factor_shift_type -pc_factor_shift_amount'
+  # petsc_options_value = 'lu NONZERO 1.e-10'
 
   # Block Jacobi works well for this problem, as does "-pc_type asm
   # -pc_asm_overlap 2", but an overlap of 1 does not work for some
@@ -79,8 +84,8 @@
   # petsc_options_iname = '-pc_type -sub_pc_type -sub_pc_factor_levels'
   # petsc_options_value = 'bjacobi  ilu          4'
 
-  # petsc_options_iname = '-pc_type -pc_asm_overlap -sub_pc_type -sub_pc_factor_levels'
-  # petsc_options_value = 'asm      2               ilu          4'
+  petsc_options_iname = '-pc_type -pc_asm_overlap -sub_pc_type -sub_pc_factor_levels'
+  petsc_options_value = 'asm      2               ilu          4'
 
   # Set the linear tolerance dynamically based on Eisenstat-Walker formula. This is
   # only relevant when not using a direct solver. It generally requires more nonlinear
@@ -109,14 +114,14 @@
 [Variables]
   [./vel_x]
     # Velocity in radial (r) direction
-    order = SECOND
+    # order = SECOND
   [../]
   [./vel_y]
     # Velocity in axial (z) direction
-    order = SECOND
+    # order = SECOND
   [../]
   [./p]
-    order = SECOND
+    # order = SECOND
   [../]
 []
 
