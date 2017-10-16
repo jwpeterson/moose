@@ -58,25 +58,23 @@
   # case. Several times when the adaptive timestepper would increase
   # the timestep, it would cause the next solve to fail. I'm not sure
   # what the cause of this behavior might be.
-  [./TimeStepper]
+  #
+  # Note the linear_iteration_ratio parameter, defaults to 25. This is
+  # the desired ratio of linear to nonlinear iterations. If you are
+  # not using a direct solver, you are probably going to trip this
+  # unless you increase it to 100 or so.
+[./TimeStepper]
     dt = .005
     type = IterationAdaptiveDT
     cutback_factor = 0.4
     growth_factor = 1.2
     optimal_iterations = 5
+    linear_iteration_ratio = 100
   [../]
   trans_ss_check = true
   ss_check_tol = 1e-10
 
-  # Bug: The IterationAdaptiveDT TimeStepper appears to become
-  # "disabled" if dt gets reduced to dtmin. From that point on, the
-  # timestep remains at dtmin? It also seems to be cutting dt even
-  # when we are taking fewer than 5 iterations??? One workaround is
-  # to restrict dtmin to the initial dt... but this will only work
-  # if we never expect the method to fail. Why does this bug seem
-  # to happen on the 21543 element mesh, but not the 9456 element
-  # mesh?
-  dtmin = .005
+  dtmin = 1.e-4
   num_steps = 1000
   l_max_its = 300
 
