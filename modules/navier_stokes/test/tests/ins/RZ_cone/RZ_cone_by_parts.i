@@ -4,9 +4,10 @@
 # .) Integrating the pressure by parts.
 # .) Natural boundary condition at the outlet.
 [GlobalParams]
-  # mu=.5e-2  # Re=100
-  mu=1e-3     # Re=500
-  # mu=1      # Re=1/2
+  # mu=1       # Re=1/2
+  # mu=.5e-2   # Re=100
+  # mu=1e-3    # Re=500
+  mu=.5e-3     # Re=1000
   rho=1
   gravity = '0 0 0'
 
