@@ -68,7 +68,15 @@
   trans_ss_check = true
   ss_check_tol = 1e-10
 
-  dtmin = 1.e-4
+  # Bug: The IterationAdaptiveDT TimeStepper appears to become
+  # "disabled" if dt gets reduced to dtmin. From that point on, the
+  # timestep remains at dtmin? It also seems to be cutting dt even
+  # when we are taking fewer than 5 iterations??? One workaround is
+  # to restrict dtmin to the initial dt... but this will only work
+  # if we never expect the method to fail. Why does this bug seem
+  # to happen on the 21543 element mesh, but not the 9456 element
+  # mesh?
+  dtmin = .005
   num_steps = 1000
   l_max_its = 300
 
