@@ -33,8 +33,8 @@
 
   # The all-tri version of the cone mesh. The name reflects the number of elements.
   # file = 'cone_linear_alltri_9456.e'
-  file = 'cone_linear_alltri_21543.e'
-  # file = 'cone_linear_alltri_86212.e'
+  # file = 'cone_linear_alltri_21543.e'
+  file = 'cone_linear_alltri_86212.e'
 []
 
 [Problem]
@@ -69,7 +69,7 @@
     cutback_factor = 0.4
     growth_factor = 1.2
     optimal_iterations = 5
-    linear_iteration_ratio = 100
+    linear_iteration_ratio = 300
   [../]
   trans_ss_check = true
   ss_check_tol = 1e-10
