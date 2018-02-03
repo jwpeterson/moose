@@ -144,7 +144,7 @@ rho=1
 
   # Block Jacobi + ILU(n)
   petsc_options_iname = '-pc_type -sub_pc_type -sub_pc_factor_levels'
-  petsc_options_value = 'bjacobi  ilu          1'
+  petsc_options_value = 'bjacobi  ilu          0'
 
   line_search = 'none'
   nl_rel_tol = 1e-8
