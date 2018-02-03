@@ -141,7 +141,7 @@ rho=1
   l_max_its = 10
   # To run to steady-state, set num-steps to some large number (1000000 for example)
   type = Transient
-  num_steps = 100
+  num_steps = 5
   trans_ss_check = true
   ss_check_tol = 1e-10
   dtmin = 5e-4
@@ -157,6 +157,7 @@ rho=1
 
 [Outputs]
   execute_on = 'timestep_end initial'
+  print_perf_log = true
   [./exodus]
     type = Exodus
   [../]
