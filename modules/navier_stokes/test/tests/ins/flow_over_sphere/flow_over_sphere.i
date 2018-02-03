@@ -131,8 +131,10 @@ rho=1
 
 [Executioner]
   petsc_options = '-snes_converged_reason -ksp_converged_reason'
-  petsc_options_iname = '-pc_type -pc_factor_shift_type -pc_factor_mat_solver_package'
-  petsc_options_value = 'lu NONZERO superlu_dist'
+  # petsc_options_iname = '-pc_type -pc_factor_shift_type -pc_factor_mat_solver_package'
+  # petsc_options_value = 'lu NONZERO superlu_dist'
+  petsc_options_iname = '-pc_type -pc_asm_overlap -sub_pc_type -sub_pc_factor_levels'
+  petsc_options_value = 'asm      1               ilu          4'
   line_search = 'none'
   nl_rel_tol = 1e-8
   nl_abs_tol = 1e-12
