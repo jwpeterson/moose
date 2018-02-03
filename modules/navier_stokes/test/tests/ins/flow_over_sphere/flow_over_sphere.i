@@ -138,9 +138,13 @@ rho=1
   # petsc_options_iname = '-pc_type -pc_factor_shift_type -pc_factor_mat_solver_package'
   # petsc_options_value = 'lu NONZERO superlu_dist'
 
-  # ASM + ILU
-  petsc_options_iname = '-pc_type -pc_asm_overlap -sub_pc_type -sub_pc_factor_levels'
-  petsc_options_value = 'asm      1               ilu          4'
+  # ASM(m) + ILU(n)
+  # petsc_options_iname = '-pc_type -pc_asm_overlap -sub_pc_type -sub_pc_factor_levels'
+  # petsc_options_value = 'asm      1               ilu          4'
+
+  # Block Jacobi + ILU(n)
+  petsc_options_iname = '-pc_type -sub_pc_type -sub_pc_factor_levels'
+  petsc_options_value = 'bjacobi  ilu          1'
 
   line_search = 'none'
   nl_rel_tol = 1e-8
