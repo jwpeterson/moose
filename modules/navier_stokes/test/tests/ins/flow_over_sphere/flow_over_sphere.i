@@ -140,7 +140,7 @@ rho=1
   nl_abs_tol = 1e-12
   nl_max_its = 10
   l_tol = 1e-6
-  l_max_its = 10
+  l_max_its = 250
   # To run to steady-state, set num-steps to some large number (1000000 for example)
   type = Transient
   num_steps = 5
