@@ -148,13 +148,15 @@ rho=1
   ss_check_tol = 1e-10
   dtmin = 5e-4
   dt = .5
-  [./TimeStepper]
-    dt = .5
-    type = IterationAdaptiveDT
-    cutback_factor = 0.4
-    growth_factor = 1.2
-    optimal_iterations = 5
-  [../]
+  # For timing studies, turn off IterationAdaptiveDT. Otherwise you can get different
+  # solve histories with different PETSc options, and apples-to-oranges comparisons.
+  # [./TimeStepper]
+  #   dt = .5
+  #   type = IterationAdaptiveDT
+  #   cutback_factor = 0.4
+  #   growth_factor = 1.2
+  #   optimal_iterations = 5
+  # [../]
 []
 
 [Outputs]
