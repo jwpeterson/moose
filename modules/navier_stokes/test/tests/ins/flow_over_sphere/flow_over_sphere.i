@@ -125,7 +125,7 @@ rho=1
   [./SMP]
     type = SMP
     full = true
-    solve_type = 'NEWTON'
+    solve_type = 'PJFNK'
   [../]
 []
 
@@ -139,12 +139,12 @@ rho=1
   # petsc_options_value = 'lu NONZERO superlu_dist'
 
   # ASM(m) + ILU(n)
-  petsc_options_iname = '-pc_type -pc_asm_overlap -sub_pc_type -sub_pc_factor_levels'
-  petsc_options_value = 'asm      1               ilu          4'
+  # petsc_options_iname = '-pc_type -pc_asm_overlap -sub_pc_type -sub_pc_factor_levels'
+  # petsc_options_value = 'asm      1               ilu          4'
 
   # Block Jacobi + ILU(n)
-  # petsc_options_iname = '-pc_type -sub_pc_type -sub_pc_factor_levels'
-  # petsc_options_value = 'bjacobi  ilu          2'
+  petsc_options_iname = '-pc_type -sub_pc_type -sub_pc_factor_levels'
+  petsc_options_value = 'bjacobi  ilu          2'
 
   line_search = 'none'
   nl_rel_tol = 1e-8
