@@ -1,0 +1,428 @@
+Framework Information:
+MOOSE Version:           git commit e3fca06 on 2018-01-23
+LibMesh Version:         09776becfb3255a41c8e70d4c354721f3d82c547
+PETSc Version:           3.7.6
+Current Time:            Sat Feb  3 16:48:43 2018
+Executable Timestamp:    Sat Feb  3 16:10:54 2018
+
+Parallelism:
+  Num Processors:          1
+  Num Threads:             1
+
+Mesh: 
+  Parallel Type:           replicated
+  Mesh Dimension:          3
+  Spatial Dimension:       3
+  Nodes:                   
+    Total:                 23407
+    Local:                 23407
+  Elems:                   
+    Total:                 104069
+    Local:                 104069
+  Num Subdomains:          2
+  Num Partitions:          1
+
+Nonlinear System:
+  Num DOFs:                93628
+  Num Local DOFs:          93628
+  Variables:               { "vel_x" "vel_y" "vel_z" "p" } 
+  Finite Element Types:    "LAGRANGE" 
+  Approximation Orders:    "FIRST" 
+
+Auxiliary System:
+  Num DOFs:                416276
+  Num Local DOFs:          416276
+  Variables:               "vxx" 
+  Finite Element Types:    "MONOMIAL" 
+  Approximation Orders:    "FIRST" 
+
+Execution Information:
+  Executioner:             Transient
+  TimeStepper:             ConstantDT
+  Solver Mode:             NEWTON
+
+
+
+
+Time Step  0, time = 0
+                dt = 0
+
+Time Step  1, time = 0.5
+                dt = 0.5
+ 0 Nonlinear |R| = 9.162659e+00
+      0 Linear |R| = 9.162659e+00
+      1 Linear |R| = 1.850319e-01
+      2 Linear |R| = 1.371906e-01
+      3 Linear |R| = 1.119125e-01
+      4 Linear |R| = 9.149308e-02
+      5 Linear |R| = 8.289564e-02
+      6 Linear |R| = 7.669711e-02
+      7 Linear |R| = 6.887924e-02
+      8 Linear |R| = 4.602120e-02
+      9 Linear |R| = 1.184241e-02
+     10 Linear |R| = 1.426553e-03
+     11 Linear |R| = 2.123947e-04
+     12 Linear |R| = 8.310781e-05
+     13 Linear |R| = 2.709505e-05
+     14 Linear |R| = 1.197880e-05
+     15 Linear |R| = 3.228199e-06
+  Linear solve converged due to CONVERGED_RTOL iterations 15
+ 1 Nonlinear |R| = 1.789872e-01
+      0 Linear |R| = 1.789872e-01
+      1 Linear |R| = 1.333819e-02
+      2 Linear |R| = 3.659304e-03
+      3 Linear |R| = 9.312967e-04
+      4 Linear |R| = 3.866973e-04
+      5 Linear |R| = 2.804279e-04
+      6 Linear |R| = 1.975364e-04
+      7 Linear |R| = 1.648668e-04
+      8 Linear |R| = 1.328609e-04
+      9 Linear |R| = 1.283222e-04
+     10 Linear |R| = 8.330598e-05
+     11 Linear |R| = 2.355316e-05
+     12 Linear |R| = 7.537897e-06
+     13 Linear |R| = 2.033754e-06
+     14 Linear |R| = 7.370167e-07
+     15 Linear |R| = 2.628517e-07
+     16 Linear |R| = 9.950049e-08
+  Linear solve converged due to CONVERGED_RTOL iterations 16
+ 2 Nonlinear |R| = 1.183579e-02
+      0 Linear |R| = 1.183579e-02
+      1 Linear |R| = 2.257946e-04
+      2 Linear |R| = 6.031358e-05
+      3 Linear |R| = 3.455909e-05
+      4 Linear |R| = 2.249149e-05
+      5 Linear |R| = 9.744518e-06
+      6 Linear |R| = 5.106877e-06
+      7 Linear |R| = 1.324015e-06
+      8 Linear |R| = 4.797005e-07
+      9 Linear |R| = 4.469258e-07
+     10 Linear |R| = 4.200533e-07
+     11 Linear |R| = 3.183298e-07
+     12 Linear |R| = 1.310125e-07
+     13 Linear |R| = 2.654422e-08
+     14 Linear |R| = 6.988833e-09
+  Linear solve converged due to CONVERGED_RTOL iterations 14
+ 3 Nonlinear |R| = 6.792706e-05
+      0 Linear |R| = 6.792706e-05
+      1 Linear |R| = 6.170879e-07
+      2 Linear |R| = 7.496177e-08
+      3 Linear |R| = 3.486148e-08
+      4 Linear |R| = 1.848426e-08
+      5 Linear |R| = 1.270280e-08
+      6 Linear |R| = 6.050317e-09
+      7 Linear |R| = 3.280979e-09
+      8 Linear |R| = 1.632713e-09
+      9 Linear |R| = 1.446774e-09
+     10 Linear |R| = 1.388184e-09
+     11 Linear |R| = 1.158939e-09
+     12 Linear |R| = 5.355458e-10
+     13 Linear |R| = 1.271285e-10
+     14 Linear |R| = 3.636260e-11
+  Linear solve converged due to CONVERGED_RTOL iterations 14
+ 4 Nonlinear |R| = 2.697710e-09
+Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 4
+ Solve Converged!
+Steady-State Relative Differential Norm: 1
+
+Time Step  2, time = 1
+                dt = 0.5
+ 0 Nonlinear |R| = 1.499930e+00
+      0 Linear |R| = 1.499930e+00
+      1 Linear |R| = 1.552811e-01
+      2 Linear |R| = 1.114539e-01
+      3 Linear |R| = 9.434922e-02
+      4 Linear |R| = 7.750137e-02
+      5 Linear |R| = 7.294643e-02
+      6 Linear |R| = 6.291469e-02
+      7 Linear |R| = 5.873295e-02
+      8 Linear |R| = 4.820251e-02
+      9 Linear |R| = 1.594840e-02
+     10 Linear |R| = 1.742257e-03
+     11 Linear |R| = 2.592697e-04
+     12 Linear |R| = 1.050651e-04
+     13 Linear |R| = 3.283841e-05
+     14 Linear |R| = 1.317869e-05
+     15 Linear |R| = 4.151477e-06
+     16 Linear |R| = 1.006936e-06
+  Linear solve converged due to CONVERGED_RTOL iterations 16
+ 1 Nonlinear |R| = 1.038131e-02
+      0 Linear |R| = 1.038131e-02
+      1 Linear |R| = 1.152274e-03
+      2 Linear |R| = 7.855844e-04
+      3 Linear |R| = 5.749179e-04
+      4 Linear |R| = 4.142843e-04
+      5 Linear |R| = 3.504228e-04
+      6 Linear |R| = 3.391838e-04
+      7 Linear |R| = 2.186146e-04
+      8 Linear |R| = 1.351821e-04
+      9 Linear |R| = 3.777914e-05
+     10 Linear |R| = 6.872211e-06
+     11 Linear |R| = 1.358058e-06
+     12 Linear |R| = 4.394816e-07
+     13 Linear |R| = 1.207923e-07
+     14 Linear |R| = 1.963752e-08
+     15 Linear |R| = 9.127376e-09
+  Linear solve converged due to CONVERGED_RTOL iterations 15
+ 2 Nonlinear |R| = 9.411818e-05
+      0 Linear |R| = 9.411818e-05
+      1 Linear |R| = 4.960957e-06
+      2 Linear |R| = 1.512972e-06
+      3 Linear |R| = 7.466118e-07
+      4 Linear |R| = 4.239688e-07
+      5 Linear |R| = 2.744503e-07
+      6 Linear |R| = 1.865083e-07
+      7 Linear |R| = 1.166125e-07
+      8 Linear |R| = 1.070915e-07
+      9 Linear |R| = 1.036855e-07
+     10 Linear |R| = 4.476583e-08
+     11 Linear |R| = 6.726532e-09
+     12 Linear |R| = 2.490758e-09
+     13 Linear |R| = 5.694914e-10
+     14 Linear |R| = 2.305513e-10
+     15 Linear |R| = 8.502359e-11
+  Linear solve converged due to CONVERGED_RTOL iterations 15
+ 3 Nonlinear |R| = 3.257866e-09
+Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 3
+ Solve Converged!
+
+Outlier Variable Residual Norms:
+  vel_z: 2.348425e-09
+Steady-State Relative Differential Norm: 9.93872
+
+Time Step  3, time = 1.5
+                dt = 0.5
+ 0 Nonlinear |R| = 9.528984e-02
+      0 Linear |R| = 9.528984e-02
+      1 Linear |R| = 5.693124e-03
+      2 Linear |R| = 4.458281e-03
+      3 Linear |R| = 3.680535e-03
+      4 Linear |R| = 2.831195e-03
+      5 Linear |R| = 2.607178e-03
+      6 Linear |R| = 2.380699e-03
+      7 Linear |R| = 2.067901e-03
+      8 Linear |R| = 1.406459e-03
+      9 Linear |R| = 4.981218e-04
+     10 Linear |R| = 5.854107e-05
+     11 Linear |R| = 8.529364e-06
+     12 Linear |R| = 1.940107e-06
+     13 Linear |R| = 6.882422e-07
+     14 Linear |R| = 2.050242e-07
+     15 Linear |R| = 8.283131e-08
+  Linear solve converged due to CONVERGED_RTOL iterations 15
+ 1 Nonlinear |R| = 2.436187e-03
+      0 Linear |R| = 2.436187e-03
+      1 Linear |R| = 1.572313e-04
+      2 Linear |R| = 7.358541e-05
+      3 Linear |R| = 3.867277e-05
+      4 Linear |R| = 2.756426e-05
+      5 Linear |R| = 1.957525e-05
+      6 Linear |R| = 1.539391e-05
+      7 Linear |R| = 1.335861e-05
+      8 Linear |R| = 1.300359e-05
+      9 Linear |R| = 1.000320e-05
+     10 Linear |R| = 2.090326e-06
+     11 Linear |R| = 3.954761e-07
+     12 Linear |R| = 1.303736e-07
+     13 Linear |R| = 3.582097e-08
+     14 Linear |R| = 8.670706e-09
+     15 Linear |R| = 4.127414e-09
+     16 Linear |R| = 9.599677e-10
+  Linear solve converged due to CONVERGED_RTOL iterations 16
+ 2 Nonlinear |R| = 1.769427e-06
+      0 Linear |R| = 1.769427e-06
+      1 Linear |R| = 4.664506e-08
+      2 Linear |R| = 1.897966e-08
+      3 Linear |R| = 9.207878e-09
+      4 Linear |R| = 6.308374e-09
+      5 Linear |R| = 3.792467e-09
+      6 Linear |R| = 2.547849e-09
+      7 Linear |R| = 1.819955e-09
+      8 Linear |R| = 1.786325e-09
+      9 Linear |R| = 1.378535e-09
+     10 Linear |R| = 3.312840e-10
+     11 Linear |R| = 9.331981e-11
+     12 Linear |R| = 2.745686e-11
+     13 Linear |R| = 8.259075e-12
+     14 Linear |R| = 2.807680e-12
+     15 Linear |R| = 1.223144e-12
+  Linear solve converged due to CONVERGED_RTOL iterations 15
+ 3 Nonlinear |R| = 2.525598e-12
+Nonlinear solve converged due to CONVERGED_FNORM_RELATIVE iterations 3
+ Solve Converged!
+
+Outlier Variable Residual Norms:
+  p: 1.883763e-12
+Steady-State Relative Differential Norm: 0.388595
+
+Time Step  4, time = 2
+                dt = 0.5
+ 0 Nonlinear |R| = 6.778774e-02
+      0 Linear |R| = 6.778774e-02
+      1 Linear |R| = 1.527775e-03
+      2 Linear |R| = 6.997366e-04
+      3 Linear |R| = 4.333935e-04
+      4 Linear |R| = 3.486514e-04
+      5 Linear |R| = 2.891439e-04
+      6 Linear |R| = 2.537263e-04
+      7 Linear |R| = 2.281809e-04
+      8 Linear |R| = 2.100953e-04
+      9 Linear |R| = 1.323395e-04
+     10 Linear |R| = 2.844942e-05
+     11 Linear |R| = 3.298910e-06
+     12 Linear |R| = 9.347385e-07
+     13 Linear |R| = 2.869668e-07
+     14 Linear |R| = 1.112180e-07
+     15 Linear |R| = 3.872750e-08
+  Linear solve converged due to CONVERGED_RTOL iterations 15
+ 1 Nonlinear |R| = 1.542468e-03
+      0 Linear |R| = 1.542468e-03
+      1 Linear |R| = 1.227197e-04
+      2 Linear |R| = 6.274713e-05
+      3 Linear |R| = 3.278935e-05
+      4 Linear |R| = 2.328993e-05
+      5 Linear |R| = 1.623828e-05
+      6 Linear |R| = 1.225110e-05
+      7 Linear |R| = 1.073654e-05
+      8 Linear |R| = 1.037003e-05
+      9 Linear |R| = 5.854404e-06
+     10 Linear |R| = 9.330861e-07
+     11 Linear |R| = 2.368173e-07
+     12 Linear |R| = 7.090039e-08
+     13 Linear |R| = 2.193343e-08
+     14 Linear |R| = 8.022149e-09
+     15 Linear |R| = 3.179368e-09
+     16 Linear |R| = 7.425241e-10
+  Linear solve converged due to CONVERGED_RTOL iterations 16
+ 2 Nonlinear |R| = 6.696155e-07
+      0 Linear |R| = 6.696155e-07
+      1 Linear |R| = 2.263206e-08
+      2 Linear |R| = 9.328468e-09
+      3 Linear |R| = 4.864158e-09
+      4 Linear |R| = 3.425956e-09
+      5 Linear |R| = 2.192826e-09
+      6 Linear |R| = 1.613783e-09
+      7 Linear |R| = 1.303780e-09
+      8 Linear |R| = 1.281736e-09
+      9 Linear |R| = 9.266405e-10
+     10 Linear |R| = 2.073849e-10
+     11 Linear |R| = 5.040446e-11
+     12 Linear |R| = 1.454301e-11
+     13 Linear |R| = 4.685288e-12
+     14 Linear |R| = 1.584254e-12
+     15 Linear |R| = 6.730767e-13
+     16 Linear |R| = 1.997607e-13
+  Linear solve converged due to CONVERGED_RTOL iterations 16
+ 3 Nonlinear |R| = 4.412809e-13
+Nonlinear solve converged due to CONVERGED_FNORM_ABS iterations 3
+ Solve Converged!
+Steady-State Relative Differential Norm: 0.0678927
+
+Time Step  5, time = 2.5
+                dt = 0.5
+ 0 Nonlinear |R| = 6.042181e-02
+      0 Linear |R| = 6.042181e-02
+      1 Linear |R| = 1.424799e-03
+      2 Linear |R| = 5.796947e-04
+      3 Linear |R| = 2.758362e-04
+      4 Linear |R| = 1.834320e-04
+      5 Linear |R| = 1.540491e-04
+      6 Linear |R| = 1.349902e-04
+      7 Linear |R| = 1.149522e-04
+      8 Linear |R| = 1.075504e-04
+      9 Linear |R| = 7.632582e-05
+     10 Linear |R| = 1.170334e-05
+     11 Linear |R| = 2.980766e-06
+     12 Linear |R| = 7.255032e-07
+     13 Linear |R| = 2.742289e-07
+     14 Linear |R| = 1.139144e-07
+     15 Linear |R| = 3.292981e-08
+  Linear solve converged due to CONVERGED_RTOL iterations 15
+ 1 Nonlinear |R| = 1.119860e-03
+      0 Linear |R| = 1.119860e-03
+      1 Linear |R| = 1.042319e-04
+      2 Linear |R| = 5.243524e-05
+      3 Linear |R| = 2.996916e-05
+      4 Linear |R| = 2.024416e-05
+      5 Linear |R| = 1.449248e-05
+      6 Linear |R| = 1.032869e-05
+      7 Linear |R| = 9.392337e-06
+      8 Linear |R| = 8.935523e-06
+      9 Linear |R| = 6.368917e-06
+     10 Linear |R| = 1.425071e-06
+     11 Linear |R| = 2.523650e-07
+     12 Linear |R| = 5.028749e-08
+     13 Linear |R| = 2.186679e-08
+     14 Linear |R| = 7.224309e-09
+     15 Linear |R| = 2.811712e-09
+     16 Linear |R| = 6.366015e-10
+  Linear solve converged due to CONVERGED_RTOL iterations 16
+ 2 Nonlinear |R| = 3.478340e-07
+      0 Linear |R| = 3.478340e-07
+      1 Linear |R| = 1.370130e-08
+      2 Linear |R| = 5.405697e-09
+      3 Linear |R| = 3.289867e-09
+      4 Linear |R| = 2.188307e-09
+      5 Linear |R| = 1.438538e-09
+      6 Linear |R| = 1.080138e-09
+      7 Linear |R| = 9.500164e-10
+      8 Linear |R| = 9.287105e-10
+      9 Linear |R| = 6.366366e-10
+     10 Linear |R| = 1.485679e-10
+     11 Linear |R| = 3.424898e-11
+     12 Linear |R| = 1.099935e-11
+     13 Linear |R| = 3.224309e-12
+     14 Linear |R| = 1.017643e-12
+     15 Linear |R| = 4.493818e-13
+     16 Linear |R| = 1.235579e-13
+  Linear solve converged due to CONVERGED_RTOL iterations 16
+ 3 Nonlinear |R| = 1.820093e-13
+Nonlinear solve converged due to CONVERGED_FNORM_ABS iterations 3
+ Solve Converged!
+
+Outlier Variable Residual Norms:
+  p: 1.404674e-13
+Steady-State Relative Differential Norm: 0.05131
+
+ -------------------------------------------------------------------------------------------------------------------------
+| NavierStokes Performance: Alive time=2449.53, Active time=2449.41                                                       |
+ -------------------------------------------------------------------------------------------------------------------------
+| Event                                      nCalls     Total Time  Avg Time    Total Time  Avg Time    % of Active Time  |
+|                                                       w/o Sub     w/o Sub     With Sub    With Sub    w/o S    With S   |
+|-------------------------------------------------------------------------------------------------------------------------|
+|                                                                                                                         |
+|                                                                                                                         |
+| Application                                                                                                             |
+|   Full Runtime                             1          1.9197      1.919652    2449.4058   2449.405767 0.08     100.00   |
+|                                                                                                                         |
+| Execution                                                                                                               |
+|   computeElemAux(LINEAR)                   26         25.6975     0.988366    25.6975     0.988366    1.05     1.05     |
+|   computeKernels()                         26         84.4271     3.247196    84.4271     3.247196    3.45     3.45     |
+|   computeNodalBCs()                        26         0.0852      0.003277    0.0852      0.003277    0.00     0.00     |
+|   compute_jacobian()                       16         1207.2863   75.455395   1207.2863   75.455395   49.29    49.29    |
+|   compute_residual()                       26         0.0159      0.000611    84.5282     3.251084    0.00     3.45     |
+|   solve()                                  5          1118.4372   223.687442  2435.9493   487.189852  45.66    99.45    |
+|                                                                                                                         |
+| Output                                                                                                                  |
+|   CSV::output()                            6          0.0000      0.000006    0.0000      0.000006    0.00     0.00     |
+|   Exodus::output()                         6          2.5255      0.420914    2.5255      0.420914    0.10     0.10     |
+|                                                                                                                         |
+| Setup                                                                                                                   |
+|   Application Setup                        1          0.1994      0.199351    6.9805      6.980543    0.01     0.28     |
+|   FEProblemBase::init::meshChanged()       1          0.1187      0.118650    0.1187      0.118650    0.00     0.00     |
+|   Initial updateActiveSemiLocalNodeRange() 1          0.0629      0.062885    0.0629      0.062885    0.00     0.00     |
+|   Initial updateGeomSearch()               2          0.0000      0.000003    0.0000      0.000003    0.00     0.00     |
+|   NonlinearSystem::update()                1          0.0003      0.000255    0.0003      0.000255    0.00     0.00     |
+|   Read Mesh                                1          0.2925      0.292507    0.2925      0.292507    0.01     0.01     |
+|   eq.init()                                1          6.3698      6.369779    6.3698      6.369779    0.26     0.26     |
+|   execMultiApps()                          1          0.0000      0.000011    0.0000      0.000011    0.00     0.00     |
+|   execTransfers()                          1          0.0000      0.000008    0.0000      0.000008    0.00     0.00     |
+|   initial adaptivity                       1          0.0000      0.000002    0.0000      0.000002    0.00     0.00     |
+|   initialSetup()                           1          1.2946      1.294589    2.0308      2.030791    0.05     0.08     |
+|   reinit() after updateGeomSearch()        1          0.0000      0.000003    0.0000      0.000003    0.00     0.00     |
+|                                                                                                                         |
+| Utility                                                                                                                 |
+|   projectSolution()                        1          0.6733      0.673287    0.6733      0.673287    0.03     0.03     |
+ -------------------------------------------------------------------------------------------------------------------------
+| Totals:                                    152        2449.4057                                       100.00            |
+ -------------------------------------------------------------------------------------------------------------------------
