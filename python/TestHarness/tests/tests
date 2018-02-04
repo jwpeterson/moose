@@ -7,6 +7,10 @@
     type = PythonUnitTest
     input = test_Diff.py
   [../]
+  [./diff_gold]
+    type = PythonUnitTest
+    input = test_DiffGold.py
+  [../]
   [./cyclic]
     type = PythonUnitTest
     input = test_Cyclic.py
@@ -62,5 +66,33 @@
    [./should_execute]
     type = PythonUnitTest
     input = test_ShouldExecute.py
+  [../]
+  [./queue_pbs]
+    type = PythonUnitTest
+    input = test_QueuePBS.py
+  [../]
+  [./report_skipped]
+    type = PythonUnitTest
+    input = test_ReportSkipped.py
+  [../]
+  [./distributed_mesh]
+    type = PythonUnitTest
+    input = test_DistributedMesh.py
+  [../]
+  [./allocations]
+    type = PythonUnitTest
+    input = test_Allocations.py
+  [../]
+  [./exra_info]
+    type = PythonUnitTest
+    input = test_ExtraInfo.py
+  [../]
+  [./parser_errors]
+    type = PythonUnitTest
+    input = test_ParserErrors.py
+  [../]
+  [./duplicate_test_names]
+    type = PythonUnitTest
+    input = test_DuplicateTestNames.py
   [../]
 []

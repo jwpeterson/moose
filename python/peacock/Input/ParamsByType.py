@@ -1,3 +1,12 @@
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 from PyQt5.QtWidgets import QWidget, QComboBox, QStackedWidget
 from PyQt5.QtCore import pyqtSignal
 from peacock.base.MooseWidget import MooseWidget
@@ -62,10 +71,11 @@ class ParamsByType(QWidget, MooseWidget):
         tot = to.findTable("Main")
         if not ct or not tot or ct == tot:
             return
-        # first remove user params in tot
         tot.removeUserParams()
         params = ct.getUserParams()
         tot.addUserParams(params)
+        to.syncParamsFrom(current)
+        # Make sure the name parameter stays the same
         idx = ct.findRow("Name")
         if idx >= 0:
             name = ct.item(idx, 1).text()

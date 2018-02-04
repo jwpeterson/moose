@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "FileMesh.h"
 #include "Parser.h"
@@ -75,8 +70,6 @@ FileMesh::buildMesh()
   }
   else // not reading Nemesis files
   {
-    MooseUtils::checkFileReadable(_file_name);
-
     // See if the user has requested reading a solution from the file.  If so, we'll need to read
     // the mesh with the exodus reader instead of using mesh.read().  This will read the mesh on
     // every processor
@@ -84,6 +77,8 @@ FileMesh::buildMesh()
     if (_app.setFileRestart() && (_file_name.rfind(".exd") < _file_name.size() ||
                                   _file_name.rfind(".e") < _file_name.size()))
     {
+      MooseUtils::checkFileReadable(_file_name);
+
       _exreader = libmesh_make_unique<ExodusII_IO>(getMesh());
       _exreader->read(_file_name);
 
@@ -92,12 +87,28 @@ FileMesh::buildMesh()
     }
     else
     {
+      auto slash_pos = _file_name.find_last_of("/");
+      auto path = _file_name.substr(0, slash_pos);
+      auto file = _file_name.substr(slash_pos + 1);
+
+      bool restarting;
       // If we are reading a mesh while restarting, then we might have
       // a solution file that relies on that mesh partitioning and/or
       // numbering.  In that case, we need to turn off repartitioning
       // and renumbering, at least at first.
-      const bool restarting = _file_name.rfind(".cpa") < _file_name.size() ||
-                              _file_name.rfind(".cpr") < _file_name.size();
+      if (file == "LATEST")
+      {
+        std::list<std::string> dir_list(1, path);
+        std::list<std::string> files = MooseUtils::getFilesInDirs(dir_list);
+
+        // Fill in the name of the LATEST file so we can open it and read it.
+        _file_name = MooseUtils::getLatestMeshCheckpointFile(files);
+        restarting = true;
+      }
+      else
+        restarting = _file_name.rfind(".cpa") < _file_name.size() ||
+                     _file_name.rfind(".cpr") < _file_name.size();
+
       const bool skip_partitioning_later = restarting && getMesh().skip_partitioning();
       const bool allow_renumbering_later = restarting && getMesh().allow_renumbering();
 
@@ -107,6 +118,7 @@ FileMesh::buildMesh()
         getMesh().allow_renumbering(false);
       }
 
+      MooseUtils::checkFileReadable(_file_name);
       getMesh().read(_file_name);
 
       if (restarting)

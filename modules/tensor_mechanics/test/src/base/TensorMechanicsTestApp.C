@@ -1,3 +1,11 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 #include "TensorMechanicsTestApp.h"
 #include "TensorMechanicsApp.h"
 #include "Moose.h"
@@ -19,6 +27,9 @@ TensorMechanicsTestApp::TensorMechanicsTestApp(InputParameters parameters) : Moo
 
   Moose::associateSyntax(_syntax, _action_factory);
   TensorMechanicsApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  TensorMechanicsApp::registerExecFlags(_factory);
 
   bool use_test_objs = getParam<bool>("allow_test_objects");
   if (use_test_objs)
@@ -62,5 +73,16 @@ TensorMechanicsTestApp__associateSyntax(Syntax & syntax, ActionFactory & action_
 }
 void
 TensorMechanicsTestApp::associateSyntax(Syntax & /*syntax*/, ActionFactory & /*action_factory*/)
+{
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+TensorMechanicsTestApp__registerExecFlags(Factory & factory)
+{
+  TensorMechanicsTestApp::registerExecFlags(factory);
+}
+void
+TensorMechanicsTestApp::registerExecFlags(Factory & /*factory*/)
 {
 }

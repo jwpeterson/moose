@@ -1,3 +1,11 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 #include "RdgTestApp.h"
 #include "RdgApp.h"
 #include "Moose.h"
@@ -19,6 +27,9 @@ RdgTestApp::RdgTestApp(InputParameters parameters) : MooseApp(parameters)
 
   Moose::associateSyntax(_syntax, _action_factory);
   RdgApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  RdgApp::registerExecFlags(_factory);
 
   bool use_test_objs = getParam<bool>("allow_test_objects");
   if (use_test_objs)
@@ -62,5 +73,16 @@ RdgTestApp__associateSyntax(Syntax & syntax, ActionFactory & action_factory)
 }
 void
 RdgTestApp::associateSyntax(Syntax & /*syntax*/, ActionFactory & /*action_factory*/)
+{
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+RdgTestApp__registerExecFlags(Factory & factory)
+{
+  RdgTestApp::registerExecFlags(factory);
+}
+void
+RdgTestApp::registerExecFlags(Factory & /*factory*/)
 {
 }

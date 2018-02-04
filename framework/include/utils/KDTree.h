@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef KDTREE_H
 #define KDTREE_H
@@ -19,6 +14,7 @@
 #include "MooseMesh.h"
 
 #include "libmesh/nanoflann.hpp"
+#include "libmesh/utility.h"
 
 class KDTree
 {
@@ -30,6 +26,11 @@ public:
   void neighborSearch(Point & query_point,
                       unsigned int patch_size,
                       std::vector<std::size_t> & return_index);
+
+  void neighborSearch(Point & query_point,
+                      unsigned int patch_size,
+                      std::vector<std::size_t> & return_index,
+                      std::vector<Real> & return_dist_sqr);
 
   /**
    * PointListAdaptor is required to use libMesh Point coordinate type with
@@ -70,7 +71,7 @@ public:
       coord_t dist = 0.0;
 
       for (unsigned int i = 0; i < LIBMESH_DIM; ++i)
-        dist += std::pow(p1[i] - p2(i), 2.0);
+        dist += Utility::pow<2>(p1[i] - p2(i));
 
       return dist;
     }
@@ -96,10 +97,10 @@ public:
     }
 
     /**
-    * Optional bounding-box computation. This function is called by the nanoflann library.
-    * If the return value is false, the standard bbox computation loop in the nanoflann
-    * library is activated.
-    **/
+     * Optional bounding-box computation. This function is called by the nanoflann library.
+     * If the return value is false, the standard bbox computation loop in the nanoflann
+     * library is activated.
+     */
     template <class BBOX>
     bool kdtree_get_bbox(BBOX & /* bb */) const
     {
@@ -114,7 +115,7 @@ public:
 
 protected:
   PointListAdaptor<LIBMESH_DIM> _point_list_adaptor;
-  UniquePtr<KdTreeT> _kd_tree;
+  std::unique_ptr<KdTreeT> _kd_tree;
 };
 
 #endif // KDTREE_H

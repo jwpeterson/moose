@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "Control.h"
@@ -23,9 +18,10 @@ validParams<Control>()
   params += validParams<TransientInterface>();
   params += validParams<SetupInterface>();
   params += validParams<FunctionInterface>();
+
+  params.set<ExecFlagEnum>("execute_on", true) = {EXEC_INITIAL, EXEC_TIMESTEP_END};
   params.registerBase("Control");
 
-  params.set<MultiMooseEnum>("execute_on") = Control::getExecuteOptions();
   params.addParam<std::vector<std::string>>(
       "depends_on",
       "The Controls that this control relies upon (i.e. must execute before this one)");
@@ -41,7 +37,7 @@ Control::Control(const InputParameters & parameters)
     UserObjectInterface(this),
     PostprocessorInterface(this),
     VectorPostprocessorInterface(this),
-    _fe_problem(*parameters.get<FEProblemBase *>("_fe_problem_base")),
+    _fe_problem(*getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")),
     _depends_on(getParam<std::vector<std::string>>("depends_on")),
     _input_parameter_warehouse(_app.getInputParameterWarehouse())
 {
@@ -50,7 +46,10 @@ Control::Control(const InputParameters & parameters)
 MultiMooseEnum
 Control::getExecuteOptions()
 {
-  return MultiMooseEnum("none=0x00 initial=0x01 linear=0x02 nonlinear=0x04 timestep_end=0x08 "
-                        "timestep_begin=0x10 custom=0x100 subdomain=0x200",
-                        "initial timestep_end");
+  ::mooseDeprecated("The 'getExecuteOptions' was replaced by the ExecFlagEnum class because MOOSE "
+                    "was updated to use this for the execute flags and the new function provides "
+                    "additional arguments for modification of the enum.");
+  ExecFlagEnum execute_on = MooseUtils::getDefaultExecFlagEnum();
+  execute_on = {EXEC_INITIAL, EXEC_TIMESTEP_END};
+  return execute_on;
 }

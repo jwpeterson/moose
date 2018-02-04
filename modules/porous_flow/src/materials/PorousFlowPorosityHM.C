@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "PorousFlowPorosityHM.h"
 
@@ -13,7 +15,8 @@ validParams<PorousFlowPorosityHM>()
 {
   InputParameters params = validParams<PorousFlowPorosityExponentialBase>();
   params.addRequiredCoupledVar(
-      "porosity_zero", "The porosity at zero volumetric strain and zero effective porepressure");
+      "porosity_zero",
+      "The porosity at zero volumetric strain and reference effective porepressure");
   params.addRangeCheckedParam<Real>(
       "biot_coefficient", 1, "biot_coefficient>=0 & biot_coefficient<=1", "Biot coefficient");
   params.addRequiredRangeCheckedParam<Real>(
@@ -21,6 +24,8 @@ validParams<PorousFlowPorosityHM>()
   params.addRequiredCoupledVar("displacements", "The solid-mechanics displacement variables");
   params.addClassDescription(
       "This Material calculates the porosity for hydro-mechanical simulations");
+  params.addCoupledVar(
+      "reference_porepressure", 0.0, "porosity = porosity_zero at reference pressure");
   return params;
 }
 
@@ -31,6 +36,9 @@ PorousFlowPorosityHM::PorousFlowPorosityHM(const InputParameters & parameters)
     _biot(getParam<Real>("biot_coefficient")),
     _solid_bulk(getParam<Real>("solid_bulk")),
     _coeff((_biot - 1.0) / _solid_bulk),
+
+    _p_reference(_nodal_material ? coupledNodalValue("reference_porepressure")
+                                 : coupledValue("reference_porepressure")),
 
     _ndisp(coupledComponents("displacements")),
     _disp_var_num(_ndisp),
@@ -72,7 +80,7 @@ PorousFlowPorosityHM::decayQp() const
   const unsigned qp_to_use =
       (_nodal_material && (_bnd || _strain_at_nearest_qp) ? nearestQP(_qp) : _qp);
 
-  return -_vol_strain_qp[qp_to_use] + _coeff * _pf[_qp];
+  return -_vol_strain_qp[qp_to_use] + _coeff * (_pf[_qp] - _p_reference[_qp]);
 }
 
 Real

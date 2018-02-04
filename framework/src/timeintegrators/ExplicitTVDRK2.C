@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ExplicitTVDRK2.h"
 #include "NonlinearSystemBase.h"
@@ -32,8 +27,6 @@ ExplicitTVDRK2::ExplicitTVDRK2(const InputParameters & parameters)
     _residual_old(_nl.addVector("residual_old", false, GHOSTED))
 {
 }
-
-ExplicitTVDRK2::~ExplicitTVDRK2() {}
 
 void
 ExplicitTVDRK2::preSolve()
@@ -104,11 +97,11 @@ ExplicitTVDRK2::solve()
 }
 
 void
-ExplicitTVDRK2::postStep(NumericVector<Number> & residual)
+ExplicitTVDRK2::postResidual(NumericVector<Number> & residual)
 {
   if (_stage == 1)
   {
-    // If postStep() is called before solve(), _stage==1 and we don't
+    // If postResidual() is called before solve(), _stage==1 and we don't
     // need to do anything.
   }
   else if (_stage == 2)
@@ -151,5 +144,6 @@ ExplicitTVDRK2::postStep(NumericVector<Number> & residual)
     residual.close();
   }
   else
-    mooseError("ExplicitTVDRK2::postStep(): _stage = ", _stage, ", only _stage = 1-3 is allowed.");
+    mooseError(
+        "ExplicitTVDRK2::postResidual(): _stage = ", _stage, ", only _stage = 1-3 is allowed.");
 }

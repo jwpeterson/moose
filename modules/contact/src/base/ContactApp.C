@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "ContactApp.h"
 #include "Moose.h"
 #include "AppFactory.h"
@@ -23,7 +26,7 @@
 #include "GluedContactConstraint.h"
 #include "MechanicalContactConstraint.h"
 #include "SparsityBasedContactConstraint.h"
-#include "FrictionalContactProblem.h"
+#include "AugmentedLagrangianContactProblem.h"
 #include "ReferenceResidualProblem.h"
 #include "NodalArea.h"
 #include "NodalAreaAction.h"
@@ -46,6 +49,9 @@ ContactApp::ContactApp(const InputParameters & parameters) : MooseApp(parameters
 
   Moose::associateSyntax(_syntax, _action_factory);
   ContactApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  ContactApp::registerExecFlags(_factory);
 }
 
 ContactApp::~ContactApp() {}
@@ -78,7 +84,7 @@ ContactApp::registerObjects(Factory & factory)
   registerConstraint(GluedContactConstraint);
   registerConstraint(MechanicalContactConstraint);
   registerConstraint(SparsityBasedContactConstraint);
-  registerProblem(FrictionalContactProblem);
+  registerProblem(AugmentedLagrangianContactProblem);
   registerProblem(ReferenceResidualProblem);
   registerUserObject(NodalArea);
   registerAux(ContactPressureAux);
@@ -122,4 +128,15 @@ ContactApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
 
   registerAction(NodalAreaAction, "add_user_object");
   registerAction(NodalAreaVarAction, "add_aux_variable");
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+ContactApp__registerExecFlags(Factory & factory)
+{
+  ContactApp::registerExecFlags(factory);
+}
+void
+ContactApp::registerExecFlags(Factory & /*factory*/)
+{
 }

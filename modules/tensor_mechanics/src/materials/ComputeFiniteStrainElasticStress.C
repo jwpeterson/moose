@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "ComputeFiniteStrainElasticStress.h"
 
 template <>
@@ -33,14 +36,6 @@ ComputeFiniteStrainElasticStress::initialSetup()
   if (!hasGuaranteedMaterialProperty(_elasticity_tensor_name, Guarantee::ISOTROPIC))
     mooseError("ComputeFiniteStrainElasticStress can only be used with elasticity tensor materials "
                "that guarantee isotropic tensors.");
-
-  _is_elasticity_tensor_guaranteed_constant_in_time =
-      hasGuaranteedMaterialProperty(_elasticity_tensor_name, Guarantee::CONSTANT_IN_TIME);
-  if ((isParamValid("initial_stress")) && !_is_elasticity_tensor_guaranteed_constant_in_time)
-    mooseError("A finite stress material cannot both have an initial stress and an elasticity "
-               "tensor with varying values; please use a defined constant elasticity tensor, "
-               "such as ComputeIsotropicElasticityTensor, if your model defines an initial "
-               "stress, or apply an initial strain instead.");
 }
 
 void
@@ -55,20 +50,28 @@ ComputeFiniteStrainElasticStress::computeQpStress()
   // Calculate the stress in the intermediate configuration
   RankTwoTensor intermediate_stress;
 
-  // Check if the elasticity tensor has changed values
-  if (!_is_elasticity_tensor_guaranteed_constant_in_time)
-    intermediate_stress =
-        _elasticity_tensor[_qp] * (_elastic_strain_old[_qp] + _strain_increment[_qp]);
-  else
-    intermediate_stress = _stress_old[_qp] + _elasticity_tensor[_qp] * _strain_increment[_qp];
+  intermediate_stress =
+      _elasticity_tensor[_qp] * (_elastic_strain_old[_qp] + _strain_increment[_qp]);
 
   // Rotate the stress state to the current configuration
   _stress[_qp] =
       _rotation_increment[_qp] * intermediate_stress * _rotation_increment[_qp].transpose();
+
+  // InitialStress Deprecation: remove the following 2 lines
+  rotateQpInitialStress();
+  addQpInitialStress();
 
   // Assign value for elastic strain, which is equal to the mechanical strain
   _elastic_strain[_qp] = _mechanical_strain[_qp];
 
   // Compute dstress_dstrain
   _Jacobian_mult[_qp] = _elasticity_tensor[_qp]; // This is NOT the exact jacobian
+}
+
+void
+ComputeFiniteStrainElasticStress::rotateQpInitialStress()
+{
+  if (_initial_stress_provided)
+    (*_initial_stress)[_qp] = _rotation_increment[_qp] * (*_initial_stress_old)[_qp] *
+                              _rotation_increment[_qp].transpose();
 }

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "MultiAppProjectionTransfer.h"
 
@@ -135,11 +130,8 @@ MultiAppProjectionTransfer::assembleL2(EquationSystems & es, const std::string &
   const std::vector<Real> & JxW = fe->get_JxW();
   const std::vector<std::vector<Real>> & phi = fe->get_phi();
 
-  const MeshBase::const_element_iterator end_el = to_mesh.active_local_elements_end();
-  for (MeshBase::const_element_iterator el = to_mesh.active_local_elements_begin(); el != end_el;
-       ++el)
+  for (const auto & elem : to_mesh.active_local_element_ptr_range())
   {
-    const Elem * elem = *el;
     fe->reinit(elem);
 
     dof_map.dof_indices(elem, dof_indices);
@@ -420,12 +412,8 @@ MultiAppProjectionTransfer::execute()
     fe->attach_quadrature_rule(&qrule);
     const std::vector<Point> & xyz = fe->get_xyz();
 
-    MeshBase::const_element_iterator el = to_mesh.local_elements_begin();
-    const MeshBase::const_element_iterator end_el = to_mesh.local_elements_end();
-
-    for (el = to_mesh.active_local_elements_begin(); el != end_el; el++)
+    for (const auto & elem : to_mesh.active_local_element_ptr_range())
     {
-      const Elem * elem = *el;
       fe->reinit(elem);
 
       bool element_is_evaled = false;
@@ -550,20 +538,13 @@ MultiAppProjectionTransfer::projectSolution(unsigned int i_to)
       }
     }
   }
-  {
-    MeshBase::const_element_iterator it = to_mesh.active_local_elements_begin();
-    const MeshBase::const_element_iterator end_it = to_mesh.active_local_elements_end();
-    for (; it != end_it; ++it)
+  for (const auto & elem : to_mesh.active_local_element_ptr_range())
+    for (unsigned int comp = 0; comp < elem->n_comp(to_sys.number(), to_var.number()); comp++)
     {
-      const Elem * elem = *it;
-      for (unsigned int comp = 0; comp < elem->n_comp(to_sys.number(), to_var.number()); comp++)
-      {
-        const dof_id_type proj_index = elem->dof_number(ls.number(), _proj_var_num, comp);
-        const dof_id_type to_index = elem->dof_number(to_sys.number(), to_var.number(), comp);
-        to_solution->set(to_index, (*ls.solution)(proj_index));
-      }
+      const dof_id_type proj_index = elem->dof_number(ls.number(), _proj_var_num, comp);
+      const dof_id_type to_index = elem->dof_number(to_sys.number(), to_var.number(), comp);
+      to_solution->set(to_index, (*ls.solution)(proj_index));
     }
-  }
 
   to_solution->close();
   to_sys.update();

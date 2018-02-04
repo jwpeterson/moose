@@ -1,7 +1,16 @@
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 import os, re, math
 
 class CSVDiffer:
-    def __init__(self, test_dir, out_files, abs_zero=1e-11, relative_error=5.5e-6):
+    def __init__(self, test_dir, out_files, abs_zero=1e-11, relative_error=5.5e-6, gold_dir='gold'):
         self.abs_zero = float(abs_zero)
         self.rel_tol = float(relative_error)
         self.files = []
@@ -16,7 +25,7 @@ class CSVDiffer:
                 self.msg += 'WARNING: Are you sure you want to use csv diff on a .e file?\n'
 
             test_filename = os.path.join(test_dir,out_file)
-            gold_filename = os.path.join(test_dir, 'gold', out_file)
+            gold_filename = os.path.join(test_dir, gold_dir, out_file)
             if not os.path.exists(test_filename):
                 self.addError(test_filename, 'File does not exist!')
             elif not os.path.exists(gold_filename):

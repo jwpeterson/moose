@@ -1,21 +1,16 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef CHANGEOVERTIMESTEPPOSTPROCESSOR_H
 #define CHANGEOVERTIMESTEPPOSTPROCESSOR_H
 
-#include "GeneralPostprocessor.h"
+#include "ChangeOverTimePostprocessor.h"
 
 class ChangeOverTimestepPostprocessor;
 
@@ -24,26 +19,12 @@ InputParameters validParams<ChangeOverTimestepPostprocessor>();
 
 /**
  * Computes the change in a post-processor value, or the magnitude of its
- * relative change, over a time step.
+ * relative change, over a time step or over the entire transient.
  */
-class ChangeOverTimestepPostprocessor : public GeneralPostprocessor
+class ChangeOverTimestepPostprocessor : public ChangeOverTimePostprocessor
 {
 public:
   ChangeOverTimestepPostprocessor(const InputParameters & parameters);
-
-  virtual void initialize() override;
-  virtual void execute() override;
-  virtual Real getValue() override;
-
-protected:
-  /// option to compute the magnitude of relative change instead of change
-  const bool _compute_relative_change;
-
-  /// current post-processor value
-  const PostprocessorValue & _pps_value;
-
-  /// old post-processor value
-  const PostprocessorValue & _pps_value_old;
 };
 
 #endif /* CHANGEOVERTIMESTEPPOSTPROCESSOR_H */

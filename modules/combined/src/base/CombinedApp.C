@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "CombinedApp.h"
 #include "Factory.h"
@@ -43,6 +45,9 @@ CombinedApp::CombinedApp(const InputParameters & parameters) : MooseApp(paramete
 
   Moose::associateSyntax(_syntax, _action_factory);
   CombinedApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  CombinedApp::registerExecFlags(_factory);
 }
 
 CombinedApp::~CombinedApp() {}
@@ -111,4 +116,31 @@ CombinedApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
   PorousFlowApp::associateSyntax(syntax, action_factory);
   RdgApp::associateSyntax(syntax, action_factory);
   LevelSetApp::associateSyntax(syntax, action_factory);
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+CombinedApp__registerExecFlags(Factory & factory)
+{
+  CombinedApp::registerExecFlags(factory);
+}
+void
+CombinedApp::registerExecFlags(Factory & factory)
+{
+  ChemicalReactionsApp::registerExecFlags(factory);
+  ContactApp::registerExecFlags(factory);
+  FluidPropertiesApp::registerExecFlags(factory);
+  HeatConductionApp::registerExecFlags(factory);
+  MiscApp::registerExecFlags(factory);
+  NavierStokesApp::registerExecFlags(factory);
+  PhaseFieldApp::registerExecFlags(factory);
+  RichardsApp::registerExecFlags(factory);
+  SolidMechanicsApp::registerExecFlags(factory);
+  StochasticToolsApp::registerExecFlags(factory);
+  TensorMechanicsApp::registerExecFlags(factory);
+  WaterSteamEOSApp::registerExecFlags(factory);
+  XFEMApp::registerExecFlags(factory);
+  PorousFlowApp::registerExecFlags(factory);
+  RdgApp::registerExecFlags(factory);
+  LevelSetApp::registerExecFlags(factory);
 }

@@ -1,13 +1,21 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef RECOMPUTERADIALRETURNHYPERBOLICVISCOPLASTICITY_H
 #define RECOMPUTERADIALRETURNHYPERBOLICVISCOPLASTICITY_H
 
 #include "RadialReturnStressUpdate.h"
+
+class HyperbolicViscoplasticityStressUpdate;
+
+template <>
+InputParameters validParams<HyperbolicViscoplasticityStressUpdate>();
 
 /**
  * This class uses the Discrete material in an isotropic radial return hyperbolic
@@ -23,7 +31,6 @@
  * Petrinic's Introduction to Computational Plasticity (2004) Oxford University
  * Press, pg. 162 - 163.
  */
-
 class HyperbolicViscoplasticityStressUpdate : public RadialReturnStressUpdate
 {
 public:
@@ -39,6 +46,7 @@ protected:
   virtual Real computeDerivative(const Real effective_trial_stress, const Real scalar) override;
   virtual void iterationFinalize(Real scalar) override;
   virtual void computeStressFinalize(const RankTwoTensor & plasticStrainIncrement) override;
+  virtual Real computeHardeningValue(Real scalar);
 
   /// a string to prepend to the plastic strain Material Property name
   const std::string _plastic_prepend;

@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SolidModel.h"
 #include "AxisymmetricRZ.h"
@@ -802,28 +804,31 @@ SolidModel::computeEshelby()
   // Deformation gradient (F):
   ColumnMajorMatrix F;
   _element->computeDeformationGradient(_qp, F);
+  // Displacement gradient (H):
+  ColumnMajorMatrix H(F);
+  H.addDiag(-1.0);
   Real detF = _element->detMatrix(F);
   ColumnMajorMatrix Finv;
   _element->invertMatrix(F, Finv);
   ColumnMajorMatrix FinvT;
   FinvT = Finv.transpose();
-  ColumnMajorMatrix FT;
-  FT = F.transpose();
+  ColumnMajorMatrix HT;
+  HT = H.transpose();
 
   // 1st Piola-Kirchoff Stress (P):
   ColumnMajorMatrix piola;
   piola = stress_CMM * FinvT;
   piola *= detF;
 
-  // FTP = F^T * P = F^T * detF * sigma * FinvT;
-  ColumnMajorMatrix FTP;
-  FTP = FT * piola;
+  // HTP = H^T * P = H^T * detF * sigma * FinvT;
+  ColumnMajorMatrix HTP;
+  HTP = HT * piola;
 
   ColumnMajorMatrix WI;
   WI.identity();
   WI *= (*_SED)[_qp];
   WI *= detF;
-  (*_Eshelby_tensor)[_qp] = WI - FTP;
+  (*_Eshelby_tensor)[_qp] = WI - HTP;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -834,9 +839,6 @@ SolidModel::computeConstitutiveModelStress()
   // Given the stretching, compute the stress increment and add it to the old stress. Also update
   // the creep strain
   // stress = stressOld + stressIncrement
-
-  if (_step_zero)
-    return;
 
   const SubdomainID current_block = _current_elem->subdomain_id();
   MooseSharedPointer<ConstitutiveModel> cm = _constitutive_model[current_block];

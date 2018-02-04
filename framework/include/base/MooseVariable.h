@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MOOSEVARIABLE_H
 #define MOOSEVARIABLE_H
@@ -70,7 +65,7 @@ public:
   void reinitNodes(const std::vector<dof_id_type> & nodes);
   void reinitNodesNeighbor(const std::vector<dof_id_type> & nodes);
 
-  const std::set<SubdomainID> & activeSubdomains();
+  const std::set<SubdomainID> & activeSubdomains() const;
 
   /**
    * Is the variable active on the subdomain?
@@ -449,6 +444,29 @@ public:
    * Whether or not this variable is actually using the shape function second derivative.
    */
   bool usesSecondPhi() { return _need_second || _need_second_old || _need_second_older; }
+
+  /**
+   * Whether or not this variable is actually using the shape function value.
+   *
+   * Currently hardcoded to true because we always compute the value.
+   */
+  bool usesPhiNeighbor() { return true; }
+
+  /**
+   * Whether or not this variable is actually using the shape function gradient.
+   *
+   * Currently hardcoded to true because we always compute the value.
+   */
+  bool usesGradPhiNeighbor() { return true; }
+
+  /**
+   * Whether or not this variable is actually using the shape function second derivative on a
+   * neighbor.
+   */
+  bool usesSecondPhiNeighbor()
+  {
+    return _need_second_neighbor || _need_second_old_neighbor || _need_second_older_neighbor;
+  }
 
 protected:
   /**

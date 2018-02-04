@@ -1,18 +1,14 @@
 #pylint: disable=missing-docstring
-####################################################################################################
-#                                    DO NOT MODIFY THIS HEADER                                     #
-#                   MOOSE - Multiphysics Object Oriented Simulation Environment                    #
-#                                                                                                  #
-#                              (c) 2010 Battelle Energy Alliance, LLC                              #
-#                                       ALL RIGHTS RESERVED                                        #
-#                                                                                                  #
-#                            Prepared by Battelle Energy Alliance, LLC                             #
-#                               Under Contract No. DE-AC07-05ID14517                               #
-#                               With the U. S. Department of Energy                                #
-#                                                                                                  #
-#                               See COPYRIGHT for full restrictions                                #
-####################################################################################################
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
 #pylint: enable=missing-docstring
+
 import re
 
 from markdown.preprocessors import Preprocessor
@@ -63,6 +59,7 @@ class MarkdownPreprocessor(MooseMarkdownCommon, Preprocessor):
         settings['start'] = l_settings['start']
         settings['end'] = l_settings['end']
         settings['include-end'] = l_settings['include-end']
+        settings['include-start'] = l_settings['include-start']
         return settings
 
     def __init__(self, markdown_instance=None, **kwargs):
@@ -84,7 +81,8 @@ class MarkdownPreprocessor(MooseMarkdownCommon, Preprocessor):
         settings = self.getSettings(match.group(2))
         if settings['start'] or settings['end']:
             content = ListingPattern.extractLineRange(filename, settings['start'],
-                                                      settings['end'], settings['include-end'])
+                                                      settings['end'], settings['include-start'],
+                                                      settings['include-end'])
         else:
             with open(filename, 'r') as fid:
                 content = fid.read()

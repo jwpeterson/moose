@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "ComputeCosseratElasticityTensor.h"
 
 template <>
@@ -31,8 +34,8 @@ ComputeCosseratElasticityTensor::ComputeCosseratElasticityTensor(const InputPara
     _elastic_flexural_rigidity_tensor(
         declareProperty<RankFourTensor>("elastic_flexural_rigidity_tensor"))
 {
-  // all tensors created by this class are always constant in time
-  issueGuarantee(_elasticity_tensor_name, Guarantee::CONSTANT_IN_TIME);
+  if (!isParamValid("elasticity_tensor_prefactor"))
+    issueGuarantee(_elasticity_tensor_name, Guarantee::CONSTANT_IN_TIME);
 }
 
 void

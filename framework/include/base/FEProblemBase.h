@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef FEPROBLEMBASE_H
 #define FEPROBLEMBASE_H
@@ -200,6 +195,7 @@ public:
                             const Real abstol,
                             const PetscInt nfuncs,
                             const PetscInt max_funcs,
+                            const PetscBool force_iteration,
                             const Real initial_residual_before_preset_bcs,
                             const Real div_threshold);
 
@@ -360,8 +356,9 @@ public:
   virtual void sizeZeroes(unsigned int size, THREAD_ID tid);
   virtual bool reinitDirac(const Elem * elem, THREAD_ID tid) override;
   virtual void reinitElem(const Elem * elem, THREAD_ID tid) override;
-  virtual void
-  reinitElemPhys(const Elem * elem, std::vector<Point> phys_points_in_elem, THREAD_ID tid) override;
+  virtual void reinitElemPhys(const Elem * elem,
+                              const std::vector<Point> & phys_points_in_elem,
+                              THREAD_ID tid) override;
   virtual void
   reinitElemFace(const Elem * elem, unsigned int side, BoundaryID bnd_id, THREAD_ID tid) override;
   virtual void reinitNode(const Node * node, THREAD_ID tid) override;
@@ -431,11 +428,6 @@ public:
   virtual unsigned int nLinearIterations() override;
   virtual Real finalNonlinearResidual() override;
   virtual bool computingInitialResidual() override;
-
-  /**
-   * Returns true if we are currently computing Jacobian
-   */
-  virtual bool currentlyComputingJacobian() { return _currently_computing_jacobian; }
 
   /**
    * Returns true if we are in or beyond the initialSetup stage
@@ -1070,7 +1062,12 @@ public:
   // Adaptivity /////
   Adaptivity & adaptivity() { return _adaptivity; }
   virtual void initialAdaptMesh();
-  virtual void adaptMesh();
+
+  /**
+   * @returns Whether or not the mesh was changed
+   */
+  virtual bool adaptMesh();
+
   /**
    * @return The number of adaptivity cycles completed.
    */
@@ -1099,6 +1096,9 @@ public:
   /// Update the mesh due to changing XFEM cuts
   virtual bool updateMeshXFEM();
 
+  /**
+   * Update data after a mesh change.
+   */
   virtual void meshChanged() override;
 
   /**
@@ -1107,13 +1107,17 @@ public:
    */
   void notifyWhenMeshChanges(MeshChangedInterface * mci);
 
+  /**
+   * Method called to perform a series of sanity checks before a simulation is run. This method
+   * doesn't return when errors are found, instead it generally calls mooseError() directly.
+   */
   virtual void checkProblemIntegrity();
 
   void serializeSolution();
 
-  // debugging iface /////
-
   void setKernelTypeResidual(Moose::KernelType kt) { _kernel_type = kt; }
+
+  void registerRandomInterface(RandomInterface & random_interface, const std::string & name);
 
   /**
    * Set flag that Jacobian is constant (for optimization purposes)
@@ -1121,11 +1125,24 @@ public:
    */
   void setConstJacobian(bool state) { _const_jacobian = state; }
 
-  void registerRandomInterface(RandomInterface & random_interface, const std::string & name);
-
+  /**
+   * Set flag to indicate whether kernel coverage checks should be performed. This check makes
+   * sure that at least one kernel is active on all subdomains in the domain (default: true).
+   */
   void setKernelCoverageCheck(bool flag) { _kernel_coverage_check = flag; }
 
+  /**
+   * Set flag to indicate whether material coverage checks should be performed. This check makes
+   * sure that at least one material is active on all subdomains in the domain if any material is
+   * supplied. If no materials are supplied anywhere, a simulation is still considered OK as long as
+   * no properties are being requested anywhere.
+   */
   void setMaterialCoverageCheck(bool flag) { _material_coverage_check = flag; }
+
+  /**
+   * Toggle parallel barrier messaging (defaults to on).
+   */
+  void setParallelBarrierMessaging(bool flag) { _parallel_barrier_messaging = flag; }
 
   /**
    * Calls parentOutputPositionChanged() on all sub apps.
@@ -1212,13 +1229,16 @@ public:
   /// Returns whether or not this Problem has a TimeIntegrator
   bool hasTimeIntegrator() const { return _has_time_integrator; }
 
+  ///@{
   /**
-   * Return the current execution flag.
+   * Return/set the current execution flag.
    *
    * Returns EXEC_NONE when not being executed.
    * @see FEProblemBase::execute
    */
   const ExecFlagType & getCurrentExecuteOnFlag() const;
+  void setCurrentExecuteOnFlag(const ExecFlagType &);
+  ///@}
 
   /**
    * Convenience function for performing execution of MOOSE systems.
@@ -1255,17 +1275,17 @@ public:
    */
   bool skipAdditionalRestartData() const { return _skip_additional_restart_data; }
 
-public:
   ///@{
   /**
    * Convenience zeros
-   * @see ZeroInterface
    */
   std::vector<Real> _real_zero;
+  std::vector<VariableValue> _scalar_zero;
   std::vector<VariableValue> _zero;
   std::vector<VariableGradient> _grad_zero;
   std::vector<VariableSecond> _second_zero;
   std::vector<VariablePhiSecond> _second_phi_zero;
+  std::vector<Point> _point_zero;
   ///@}
 
   /**
@@ -1419,6 +1439,15 @@ protected:
   /// Objects to be notified when the mesh changes
   std::vector<MeshChangedInterface *> _notify_when_mesh_changes;
 
+  /**
+   * Helper method to update some or all data after a mesh change.
+   *
+   * Iff intermediate_change is true, only perform updates as
+   * necessary to prepare for another mesh change
+   * immediately-subsequent.
+   */
+  void meshChangedHelper(bool intermediate_change = false);
+
   /// Helper to check for duplicate variable names across systems or within a single system
   bool duplicateVariableCheck(const std::string & var_name, const FEType & type, bool is_aux);
 
@@ -1512,6 +1541,9 @@ protected:
   /// Whether or not an exception has occurred
   bool _has_exception;
 
+  /// Whether or not information about how many transfers have completed is printed
+  bool _parallel_barrier_messaging;
+
   /// The error message to go with an exception
   std::string _exception_message;
 
@@ -1532,9 +1564,6 @@ private:
   bool _force_restart;
   bool _skip_additional_restart_data;
   bool _fail_next_linear_convergence_check;
-
-  /// Whether or not the system is currently computing the Jacobian matrix
-  bool _currently_computing_jacobian;
 
   /// At or beyond initialSteup stage
   bool _started_initial_setup;

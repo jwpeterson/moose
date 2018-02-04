@@ -1,8 +1,6 @@
 [Mesh]
   type = EBSDMesh
   filename = 'test.txt'
-
-  parallel_type = replicated # recon_var IC
 []
 
 [GlobalParams]

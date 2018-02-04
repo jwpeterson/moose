@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SubdomainBoundingBox.h"
 #include "Conversion.h"
@@ -23,6 +18,8 @@ validParams<SubdomainBoundingBox>()
   MooseEnum location("INSIDE OUTSIDE", "INSIDE");
 
   InputParameters params = validParams<MeshModifier>();
+  params.addClassDescription("Changes the subdomain ID of elements either (XOR) inside or outside "
+                             "the specified box to the specified ID.");
   params.addRequiredParam<RealVectorValue>(
       "bottom_left", "The bottom left point (in x,y,z with spaces in-between).");
   params.addRequiredParam<RealVectorValue>(
@@ -53,19 +50,14 @@ SubdomainBoundingBox::modify()
   if (!_mesh_ptr)
     mooseError("_mesh_ptr must be initialized before calling SubdomainBoundingBox::modify()");
 
-  // Reference the the libMesh::MeshBase
-  MeshBase & mesh = _mesh_ptr->getMesh();
-
   // Loop over the elements
-  for (MeshBase::element_iterator el = mesh.active_elements_begin();
-       el != mesh.active_elements_end();
-       ++el)
+  for (const auto & elem : _mesh_ptr->getMesh().active_element_ptr_range())
   {
-    bool contains = _bounding_box.contains_point((*el)->centroid());
+    bool contains = _bounding_box.contains_point(elem->centroid());
     if (contains && _location == "INSIDE")
-      (*el)->subdomain_id() = _block_id;
+      elem->subdomain_id() = _block_id;
     else if (!contains && _location == "OUTSIDE")
-      (*el)->subdomain_id() = _block_id;
+      elem->subdomain_id() = _block_id;
   }
 
   // Assign block name, if provided

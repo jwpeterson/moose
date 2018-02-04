@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "PolycrystalUserObjectBase.h"
 #include "NonlinearSystemBase.h"
@@ -40,9 +42,9 @@ validParams<PolycrystalUserObjectBase>()
   params.set<bool>("allow_duplicate_execution_on_initial") = true;
 
   // This object should only be executed _before_ the initial condition
-  MultiMooseEnum execute_options(SetupInterface::getExecuteOptions());
-  execute_options = "initial";
-  params.set<MultiMooseEnum>("execute_on") = execute_options;
+  ExecFlagEnum execute_options = MooseUtils::getDefaultExecFlagEnum();
+  execute_options = EXEC_INITIAL;
+  params.set<ExecFlagEnum>("execute_on") = execute_options;
 
   return params;
 }

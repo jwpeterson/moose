@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "BrineFluidProperties.h"
 
@@ -38,16 +40,16 @@ BrineFluidProperties::BrineFluidProperties(const InputParameters & parameters)
   _water_fp = &_fe_problem.getUserObject<SinglePhaseFluidPropertiesPT>(water_name);
 
   // SinglePhaseFluidPropertiesPT UserObject for NaCl to provide to getComponent
-  std::string halite_name = name() + ":halite";
+  std::string nacl_name = name() + ":nacl";
   {
     std::string class_name = "NaClFluidProperties";
     InputParameters params = _app.getFactory().getValidParams(class_name);
-    _fe_problem.addUserObject(class_name, halite_name, params);
+    _fe_problem.addUserObject(class_name, nacl_name, params);
   }
-  _halite_fp = &_fe_problem.getUserObject<SinglePhaseFluidPropertiesPT>(halite_name);
+  _nacl_fp = &_fe_problem.getUserObject<SinglePhaseFluidPropertiesPT>(nacl_name);
 
   // Molar mass of NaCl and H20
-  _Mnacl = _halite_fp->molarMass();
+  _Mnacl = _nacl_fp->molarMass();
   _Mh2o = _water_fp->molarMass();
 }
 
@@ -62,7 +64,7 @@ BrineFluidProperties::getComponent(unsigned int component) const
       return *_water_fp;
 
     case NACL:
-      return *_halite_fp;
+      return *_nacl_fp;
 
     default:
       mooseError("BrineFluidProperties::getComponent has been provided an incorrect component");
@@ -153,7 +155,7 @@ BrineFluidProperties::rho_dpTx(Real pressure,
 }
 
 Real
-BrineFluidProperties::mu(Real water_density, Real temperature, Real xnacl) const
+BrineFluidProperties::mu_from_rho_T(Real water_density, Real temperature, Real xnacl) const
 {
   // Correlation requires molal concentration (mol/kg)
   Real mol = massFractionToMolalConc(xnacl);
@@ -166,7 +168,7 @@ BrineFluidProperties::mu(Real water_density, Real temperature, Real xnacl) const
   Real a = 1.0 + 0.0816 * mol + 0.0122 * mol2 + 0.128e-3 * mol3 +
            0.629e-3 * Tc * (1.0 - std::exp(-0.7 * mol));
 
-  return a * _water_fp->mu(water_density, temperature);
+  return a * _water_fp->mu_from_rho_T(water_density, temperature);
 }
 
 void
@@ -181,7 +183,8 @@ BrineFluidProperties::mu_drhoTx(Real water_density,
 {
   // Viscosity of water and derivatives wrt water density and temperature
   Real muw, dmuw_drhow, dmuw_dT;
-  _water_fp->mu_drhoT(water_density, temperature, dwater_density_dT, muw, dmuw_drhow, dmuw_dT);
+  _water_fp->mu_drhoT_from_rho_T(
+      water_density, temperature, dwater_density_dT, muw, dmuw_drhow, dmuw_dT);
 
   // Correlation requires molal concentration (mol/kg)
   Real mol = massFractionToMolalConc(xnacl);
@@ -325,7 +328,7 @@ BrineFluidProperties::e_dpTx(Real pressure,
 }
 
 Real
-BrineFluidProperties::k(Real water_density, Real temperature, Real xnacl) const
+BrineFluidProperties::k_from_rho_T(Real water_density, Real temperature, Real xnacl) const
 {
   // Correlation requires molal concentration (mol/kg)
   Real mol = massFractionToMolalConc(xnacl);
@@ -333,7 +336,7 @@ BrineFluidProperties::k(Real water_density, Real temperature, Real xnacl) const
   Real Tc = temperature - _T_c2k;
 
   Real S = 100.0 * _Mnacl * mol / (1.0 + _Mnacl * mol);
-  Real lambdaw = _water_fp->k(water_density, temperature);
+  Real lambdaw = _water_fp->k_from_rho_T(water_density, temperature);
   Real lambda = 1.0 - (2.3434e-3 - 7.924e-6 * Tc + 3.924e-8 * Tc * Tc) * S +
                 (1.06e-5 - 2.0e-8 * Tc - 1.2e-10 * Tc * Tc) * S * S;
 

@@ -1,21 +1,25 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef ALEKERNEL_H
 #define ALEKERNEL_H
 
 #include "Kernel.h"
 #include "Assembly.h"
+#include "DerivativeMaterialInterface.h"
 
 class ALEKernel;
 
 template <>
 InputParameters validParams<ALEKernel>();
 
-class ALEKernel : public Kernel
+class ALEKernel : public DerivativeMaterialInterface<Kernel>
 {
 public:
   ALEKernel(const InputParameters & parameters);

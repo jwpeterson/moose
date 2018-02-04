@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ChemicalReactionsApp.h"
 #include "Moose.h"
@@ -24,6 +26,7 @@
 #include "AqueousEquilibriumRxnAux.h"
 #include "KineticDisPreConcAux.h"
 #include "KineticDisPreRateAux.h"
+#include "PHAux.h"
 
 #include "AddPrimarySpeciesAction.h"
 #include "AddSecondarySpeciesAction.h"
@@ -34,6 +37,8 @@
 
 #include "LangmuirMaterial.h"
 #include "MollifiedLangmuirMaterial.h"
+
+#include "TotalMineralVolumeFraction.h"
 
 template <>
 InputParameters
@@ -51,6 +56,9 @@ ChemicalReactionsApp::ChemicalReactionsApp(const InputParameters & parameters)
 
   Moose::associateSyntax(_syntax, _action_factory);
   ChemicalReactionsApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  ChemicalReactionsApp::registerExecFlags(_factory);
 }
 
 ChemicalReactionsApp::~ChemicalReactionsApp() {}
@@ -90,11 +98,14 @@ ChemicalReactionsApp::registerObjects(Factory & factory)
   registerAux(AqueousEquilibriumRxnAux);
   registerAux(KineticDisPreConcAux);
   registerAux(KineticDisPreRateAux);
+  registerAux(PHAux);
 
   registerBoundaryCondition(ChemicalOutFlowBC);
 
   registerMaterial(LangmuirMaterial);
   registerMaterial(MollifiedLangmuirMaterial);
+
+  registerPostprocessor(TotalMineralVolumeFraction);
 }
 
 // External entry point for dynamic syntax association
@@ -117,4 +128,15 @@ ChemicalReactionsApp::associateSyntax(Syntax & syntax, ActionFactory & action_fa
   registerAction(AddCoupledEqSpeciesAction, "add_aux_kernel");
   registerAction(AddCoupledSolidKinSpeciesAction, "add_kernel");
   registerAction(AddCoupledSolidKinSpeciesAction, "add_aux_kernel");
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+ChemicalReactionsApp__registerExecFlags(Factory & factory)
+{
+  ChemicalReactionsApp::registerExecFlags(factory);
+}
+void
+ChemicalReactionsApp::registerExecFlags(Factory & /*factory*/)
+{
 }

@@ -1,10 +1,18 @@
 #!/usr/bin/env python
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
 
 # This script finds the current repository revision base on the log file
 # It currently understands both local git-svn and svn repositories
 
 import subprocess, os, sys, re
-
+from distutils.version import LooseVersion
 
 def shellCommand( command, cwd=None ):
     """
@@ -21,13 +29,30 @@ def shellCommand( command, cwd=None ):
 
         return p.communicate()[0]
 
+def hideSignature():
+    """
+    Conditionally returns the flag --no-show-signature if the version
+    of git is new enough to support that option.
+    """
+    try:
+        # Search for a version string in the git version output
+        m = re.search(r"(\d+\.\S+)", shellCommand( 'git --version' ))
+        if m:
+            gitVersion = m.group(1)
+            if LooseVersion(gitVersion) >= LooseVersion("2.9"):
+                return "--no-show-signature"
+    except:
+        pass
+
+    return ""
+
 
 def gitSHA1( cwd=None ):
-  try:
-    # The SHA1 should always be available if we have a git repo.
-    return shellCommand( 'git show -s --format=%h', cwd ).strip()
-  except: # subprocess.CalledProcessError:
-    return None
+    try:
+        # The SHA1 should always be available if we have a git repo.
+        return shellCommand( 'git show ' + hideSignature() + ' -s --format=%h', cwd ).strip()
+    except: # subprocess.CalledProcessError:
+        return None
 
 
 def gitTag( cwd=None ):
@@ -41,7 +66,7 @@ def gitTag( cwd=None ):
 def gitDate( cwd=None ):
     try:
         # The date should always be available if we have a git repo.
-        return shellCommand( 'git show -s --format=%ci', cwd ).split()[0]
+        return shellCommand( 'git show ' + hideSignature() + ' -s --format=%ci', cwd ).split()[0]
     except: # subprocess.CalledProcessError:
         return None
 

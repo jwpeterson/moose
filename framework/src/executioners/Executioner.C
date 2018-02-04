@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // Moose includes
 #include "Executioner.h"
@@ -78,7 +73,7 @@ Executioner::Executioner(const InputParameters & parameters)
     UserObjectInterface(this),
     PostprocessorInterface(this),
     Restartable(parameters, "Executioners"),
-    _fe_problem(*parameters.getCheckedPointerParam<FEProblemBase *>(
+    _fe_problem(*getCheckedPointerParam<FEProblemBase *>(
         "_fe_problem_base", "This might happen if you don't have a mesh")),
     _initial_residual_norm(std::numeric_limits<Real>::max()),
     _old_initial_residual_norm(std::numeric_limits<Real>::max()),
@@ -181,12 +176,12 @@ Executioner::addAttributeReporter(const std::string & name,
                                   Real & attribute,
                                   const std::string execute_on)
 {
-  FEProblemBase * problem = parameters().getCheckedPointerParam<FEProblemBase *>(
+  FEProblemBase * problem = getCheckedPointerParam<FEProblemBase *>(
       "_fe_problem_base",
       "Failed to retrieve FEProblemBase when adding a attribute reporter in Executioner");
   InputParameters params = _app.getFactory().getValidParams("ExecutionerAttributeReporter");
   params.set<Real *>("value") = &attribute;
   if (!execute_on.empty())
-    params.set<MultiMooseEnum>("execute_on") = execute_on;
+    params.set<ExecFlagEnum>("execute_on") = execute_on;
   problem->addPostprocessor("ExecutionerAttributeReporter", name, params);
 }

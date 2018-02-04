@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "CommonOutputAction.h"
@@ -99,11 +94,9 @@ validParams<CommonOutputAction>()
       "(may include Variables, ScalarVariables, and Postprocessor names).");
 
   // Add the 'execute_on' input parameter
-  params.addParam<MultiMooseEnum>(
-      "execute_on",
-      Output::getExecuteOptions("initial timestep_end"),
-      "Set to (initial|linear|nonlinear|timestep_end|timestep_begin|final|failed|custom) to "
-      "execute only at that moment (default: 'initial timestep_end')");
+  ExecFlagEnum exec_enum = Output::getDefaultExecFlagEnum();
+  exec_enum = {EXEC_INITIAL, EXEC_TIMESTEP_END};
+  params.addParam<ExecFlagEnum>("execute_on", exec_enum, exec_enum.getDocString());
 
   // Add special Console flags
   params.addParam<bool>(

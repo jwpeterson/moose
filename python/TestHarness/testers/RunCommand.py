@@ -1,3 +1,12 @@
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 from Tester import Tester
 
 class RunCommand(Tester):
@@ -21,5 +30,5 @@ class RunCommand(Tester):
         if self.exit_code != 0 :
             self.setStatus('CODE %d' % self.exit_code, self.bucket_fail)
         else:
-            self.setStatus(self.exit_code, self.bucket_success)
+            self.setStatus(self.success_message, self.bucket_success)
         return output

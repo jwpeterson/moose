@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SystemInfo.h"
 #include "ExecutablePath.h"
@@ -32,13 +27,13 @@ std::string
 SystemInfo::getInfo() const
 {
   std::stringstream oss;
-  oss << std::left;
-  oss << "Framework Information:\n";
-  oss << std::setw(25) << "MOOSE version: " << MOOSE_REVISION << "\n";
+  oss << std::left << "Framework Information:\n"
+      << std::setw(25) << "MOOSE Version: " << MOOSE_REVISION << '\n'
+      << std::setw(25) << "LibMesh Version: " << LIBMESH_BUILD_VERSION << '\n';
 #ifdef LIBMESH_DETECTED_PETSC_VERSION_MAJOR
   oss << std::setw(25) << "PETSc Version: " << LIBMESH_DETECTED_PETSC_VERSION_MAJOR << '.'
       << LIBMESH_DETECTED_PETSC_VERSION_MINOR << '.' << LIBMESH_DETECTED_PETSC_VERSION_SUBMINOR
-      << "\n";
+      << '\n';
 #endif
 
   // Current Time

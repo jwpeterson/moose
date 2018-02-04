@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "PhaseFieldApp.h"
 #include "Moose.h"
 #include "AppFactory.h"
@@ -136,8 +139,6 @@
 #include "CrossTermBarrierFunctionMaterial.h"
 #include "DeformedGrainMaterial.h"
 #include "DerivativeMultiPhaseMaterial.h"
-#include "DerivativeParsedMaterial.h"
-#include "DerivativeSumMaterial.h"
 #include "DerivativeTwoPhaseMaterial.h"
 #include "DiscreteNucleation.h"
 #include "ElasticEnergyMaterial.h"
@@ -156,7 +157,6 @@
 #include "MathFreeEnergy.h"
 #include "MixedSwitchingFunctionMaterial.h"
 #include "MultiBarrierFunctionMaterial.h"
-#include "ParsedMaterial.h"
 #include "PFCRFFMaterial.h"
 #include "PFCTradMaterial.h"
 #include "PFFracBulkRateMaterial.h"
@@ -279,6 +279,11 @@
 #include "GrainForcesPostprocessor.h"
 #include "GrainTextureVectorPostprocessor.h"
 
+/*
+ * RelationshipManagers
+ */
+#include "GrainTrackerHaloRM.h"
+
 template <>
 InputParameters
 validParams<PhaseFieldApp>()
@@ -294,6 +299,9 @@ PhaseFieldApp::PhaseFieldApp(const InputParameters & parameters) : MooseApp(para
 
   Moose::associateSyntax(_syntax, _action_factory);
   PhaseFieldApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  PhaseFieldApp::registerExecFlags(_factory);
 }
 
 PhaseFieldApp::~PhaseFieldApp() {}
@@ -428,8 +436,6 @@ PhaseFieldApp::registerObjects(Factory & factory)
   registerMaterial(CrossTermBarrierFunctionMaterial);
   registerMaterial(DeformedGrainMaterial);
   registerMaterial(DerivativeMultiPhaseMaterial);
-  registerMaterial(DerivativeParsedMaterial);
-  registerMaterial(DerivativeSumMaterial);
   registerMaterial(DerivativeTwoPhaseMaterial);
   registerMaterial(DiscreteNucleation);
   registerMaterial(ElasticEnergyMaterial);
@@ -448,7 +454,6 @@ PhaseFieldApp::registerObjects(Factory & factory)
   registerMaterial(MathFreeEnergy);
   registerMaterial(MixedSwitchingFunctionMaterial);
   registerMaterial(MultiBarrierFunctionMaterial);
-  registerMaterial(ParsedMaterial);
   registerMaterial(PFCRFFMaterial);
   registerMaterial(PFCTradMaterial);
   registerMaterial(PFFracBulkRateMaterial);
@@ -516,6 +521,8 @@ PhaseFieldApp::registerObjects(Factory & factory)
 
   registerMesh(EBSDMesh);
   registerMesh(MortarPeriodicMesh);
+
+  registerRelationshipManager(GrainTrackerHaloRM);
 }
 
 // External entry point for dynamic syntax association
@@ -593,4 +600,15 @@ PhaseFieldApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
   registerAction(PolycrystalVoronoiVoidICAction, "add_ic");
   registerAction(RigidBodyMultiKernelAction, "add_kernel");
   registerAction(Tricrystal2CircleGrainsICAction, "add_ic");
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+PhaseFieldApp__registerExecFlags(Factory & factory)
+{
+  PhaseFieldApp::registerExecFlags(factory);
+}
+void
+PhaseFieldApp::registerExecFlags(Factory & /*factory*/)
+{
 }

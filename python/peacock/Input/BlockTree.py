@@ -1,4 +1,13 @@
 #!/usr/bin/env python
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem, QAbstractItemView, QAction, QMenu, QSizePolicy, QMessageBox
 from PyQt5.QtGui import QBrush, QColor
 from PyQt5.QtCore import Qt, pyqtSignal
@@ -288,7 +297,25 @@ class BlockTree(QTreeWidget, MooseWidget):
         self.blockSignals(False)
 
         self.changed.emit(new_block)
+        self._includeParents(new_block)
         self.blockDoubleClicked.emit(new_block) # start editing right away
+
+    def _includeParents(self, block):
+        """
+        Recursively set all parent blocks to be included
+        Input:
+            block[BlockInfo]: Include the parent of this block
+        """
+        item = self._path_item_map.get(block.path)
+        if item:
+            parent = item.parent()
+            if parent:
+                parent_block = self._item_block_map.get(parent)
+                if parent.checkState(0) == Qt.Unchecked:
+                    parent.setCheckState(0, Qt.Checked)
+                    parent_block.included = True
+                    self.changed.emit(parent_block)
+                self._includeParents(parent_block)
 
     def _treeContextMenu(self, point):
         """

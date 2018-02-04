@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "NaClFluidPropertiesTest.h"
 
@@ -54,9 +49,9 @@ TEST_F(NaClFluidPropertiesTest, halite)
   REL_TEST("enthalpy", _fp->h(pt, 673.15), 366.55e3, 1.0e-3);
 
   // Thermal conductivity (function of T only)
-  REL_TEST("k", _fp->k(p0, 323.15), 5.488, 1.0e-2);
-  REL_TEST("k", _fp->k(p0, 423.15), 3.911, 1.0e-2);
-  REL_TEST("k", _fp->k(p0, 523.15), 3.024, 2.0e-2);
+  REL_TEST("k", _fp->k_from_rho_T(p0, 323.15), 5.488, 1.0e-2);
+  REL_TEST("k", _fp->k_from_rho_T(p0, 423.15), 3.911, 1.0e-2);
+  REL_TEST("k", _fp->k_from_rho_T(p0, 523.15), 3.024, 2.0e-2);
 }
 
 /**

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ExampleConvection.h"
 
@@ -35,7 +30,7 @@ ExampleConvection::ExampleConvection(const InputParameters & parameters)
     // over the domain.
     Kernel(parameters),
 
-    // This is the "Intialization List" it sets the values of class variables
+    // This is the "initialization List" it sets the values of class variables
     // Here we are grabbing the values of Parameters to use for a velocity vector
     _x(getParam<Real>("x")),
     _y(getParam<Real>("y")),

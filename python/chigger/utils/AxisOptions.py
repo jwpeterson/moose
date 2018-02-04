@@ -1,17 +1,13 @@
 #pylint: disable=missing-docstring
-#################################################################
-#                   DO NOT MODIFY THIS HEADER                   #
-#  MOOSE - Multiphysics Object Oriented Simulation Environment  #
-#                                                               #
-#            (c) 2010 Battelle Energy Alliance, LLC             #
-#                      ALL RIGHTS RESERVED                      #
-#                                                               #
-#           Prepared by Battelle Energy Alliance, LLC           #
-#             Under Contract No. DE-AC07-05ID14517              #
-#              With the U. S. Department of Energy              #
-#                                                               #
-#              See COPYRIGHT for full restrictions              #
-#################################################################
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 import vtk
 from Options import Options
 
@@ -22,7 +18,7 @@ def get_options():
     opt = Options()
     opt.add('num_ticks', 5, "The number of tick marks to place on the axis.", vtype=int)
     opt.add('lim', "The axis extents.", vtype=list)
-    opt.add('color', [1, 1, 1], "The color of the axis, ticks, and labels.")
+    opt.add('font_color', [1, 1, 1], "The color of the axis, ticks, and labels.")
     opt.add('title', "The axis label.", vtype=str)
     opt.add('font_size', "The axis title and label font sizes, in points.", vtype=int)
     opt.add('title_font_size', "The axis title font size, in points.", vtype=int)
@@ -65,8 +61,8 @@ def set_options(vtkaxis, opt):
         vtkaxis.SetBehavior(vtk.vtkAxis.AUTO)
 
     # Color
-    if opt.isOptionValid('color'):
-        clr = opt['color']
+    if opt.isOptionValid('font_color'):
+        clr = opt['font_color']
         vtkaxis.GetTitleProperties().SetColor(*clr)
         vtkaxis.GetLabelProperties().SetColor(*clr)
         vtkaxis.GetPen().SetColorF(*clr)

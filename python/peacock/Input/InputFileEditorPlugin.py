@@ -1,4 +1,13 @@
 #!/usr/bin/env python
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 from PyQt5.QtWidgets import QFileDialog, QPlainTextEdit, QSizePolicy, QMessageBox
 from PyQt5.QtCore import Qt, pyqtSignal
 from peacock.utils import WidgetUtils
@@ -54,7 +63,7 @@ class InputFileEditorPlugin(InputFileEditor, Plugin):
         self.has_changed = True
 
     def _askToSave(self, app_info, reason):
-        if self.has_changed and app_info.valid():
+        if self.has_changed and app_info.valid() and self.tree and self.tree.input_filename and self.tree.incompatibleChanges(app_info):
             msg = "%s\nYou have unsaved changes in your input file, do you want to save?" % reason
             reply = QMessageBox.question(self, "Save?", msg, QMessageBox.Save, QMessageBox.Discard)
             if reply == QMessageBox.Save:

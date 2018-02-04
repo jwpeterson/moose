@@ -1,21 +1,19 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "MooseUtils.h"
 #include "MooseError.h"
 #include "MaterialProperty.h"
+#include "MultiMooseEnum.h"
+#include "InputParameters.h"
+#include "ExecFlagEnum.h"
 
 #include "libmesh/elem.h"
 
@@ -32,6 +30,10 @@
 // System includes
 #include <sys/stat.h>
 #include <numeric>
+
+std::string getLatestCheckpointFileHelper(const std::list<std::string> & checkpoint_files,
+                                          const std::vector<std::string> extensions,
+                                          bool keep_extension);
 
 namespace MooseUtils
 {
@@ -164,20 +166,22 @@ checkFileWriteable(const std::string & filename, bool throw_on_unwritable)
 }
 
 void
-parallelBarrierNotify(const Parallel::Communicator & comm)
+parallelBarrierNotify(const Parallel::Communicator & comm, bool messaging)
 {
   processor_id_type slave_processor_id;
 
   if (comm.rank() == 0)
   {
     // The master process is already through, so report it
-    Moose::out << "Jobs complete: 1/" << comm.size() << (1 == comm.size() ? "\n" : "\r")
-               << std::flush;
+    if (messaging)
+      Moose::out << "Jobs complete: 1/" << comm.size() << (1 == comm.size() ? "\n" : "\r")
+                 << std::flush;
     for (unsigned int i = 2; i <= comm.size(); ++i)
     {
       comm.receive(MPI_ANY_SOURCE, slave_processor_id);
-      Moose::out << "Jobs complete: " << i << "/" << comm.size() << (i == comm.size() ? "\n" : "\r")
-                 << std::flush;
+      if (messaging)
+        Moose::out << "Jobs complete: " << i << "/" << comm.size()
+                   << (i == comm.size() ? "\n" : "\r") << std::flush;
     }
   }
   else
@@ -488,61 +492,19 @@ getFilesInDirs(const std::list<std::string> & directory_list)
 }
 
 std::string
-getRecoveryFileBase(const std::list<std::string> & checkpoint_files)
+getLatestMeshCheckpointFile(const std::list<std::string> & checkpoint_files)
 {
-  // Create storage for newest restart files
-  // Note that these might have the same modification time if the simulation was fast.
-  // In that case we're going to save all of the "newest" files and sort it out momentarily
-  time_t newest_time = 0;
-  std::list<std::string> newest_restart_files;
+  const static std::vector<std::string> extensions{"cpr"};
 
-  // Loop through all possible files and store the newest
-  for (const auto & cp_file : checkpoint_files)
-  {
-    // Only look at the main checkpoint file, not the mesh, or restartable data files
-    if (hasExtension(cp_file, "xdr") || hasExtension(cp_file, "xda"))
-    {
-      struct stat stats;
-      stat(cp_file.c_str(), &stats);
+  return getLatestCheckpointFileHelper(checkpoint_files, extensions, true);
+}
 
-      time_t mod_time = stats.st_mtime;
-      if (mod_time > newest_time)
-      {
-        newest_restart_files.clear(); // If the modification time is greater, clear the list
-        newest_time = mod_time;
-      }
+std::string
+getLatestAppCheckpointFileBase(const std::list<std::string> & checkpoint_files)
+{
+  const static std::vector<std::string> extensions{"xda", "xdr"};
 
-      if (mod_time == newest_time)
-        newest_restart_files.push_back(cp_file);
-    }
-  }
-
-  // Loop through all of the newest files according the number in the file name
-  int max_file_num = -1;
-  std::string max_base;
-  pcrecpp::RE re_base_and_file_num(
-      "(.*?(\\d+))\\..*"); // Will pull out the full base and the file number simultaneously
-
-  // Now, out of the newest files find the one with the largest number in it
-  for (const auto & res_file : newest_restart_files)
-  {
-    std::string the_base;
-    int file_num = 0;
-
-    re_base_and_file_num.FullMatch(res_file, &the_base, &file_num);
-
-    if (file_num > max_file_num)
-    {
-      max_file_num = file_num;
-      max_base = the_base;
-    }
-  }
-
-  // Error if nothing was located
-  if (max_file_num == -1)
-    max_base.clear();
-
-  return max_base;
+  return getLatestCheckpointFileHelper(checkpoint_files, extensions, false);
 }
 
 bool
@@ -597,4 +559,110 @@ toUpper(const std::string & name)
   return upper;
 }
 
+ExecFlagEnum
+getDefaultExecFlagEnum()
+{
+  ExecFlagEnum exec_enum = ExecFlagEnum();
+  exec_enum.addAvailableFlags(EXEC_NONE,
+                              EXEC_INITIAL,
+                              EXEC_LINEAR,
+                              EXEC_NONLINEAR,
+                              EXEC_TIMESTEP_END,
+                              EXEC_TIMESTEP_BEGIN,
+                              EXEC_FINAL,
+                              EXEC_CUSTOM);
+  return exec_enum;
+}
+
+int
+stringToInteger(const std::string & input, bool throw_on_failure)
+{
+  int output;            // return value
+  std::size_t count = 0; // number of characters converted with stoi
+
+  // Attempt to use std::stoi, if it fails throw or produce a mooseError
+  try
+  {
+    output = std::stoi(input, &count);
+    if (input.size() != count)
+      throw std::invalid_argument("");
+  }
+  catch (const std::invalid_argument & e)
+  {
+    std::string msg = "Failed to convert '" + input + "' to an int.";
+    if (throw_on_failure)
+      throw std::invalid_argument(msg);
+    else
+      mooseError(msg);
+  }
+  return output;
+}
+
 } // MooseUtils namespace
+
+std::string
+getLatestCheckpointFileHelper(const std::list<std::string> & checkpoint_files,
+                              const std::vector<std::string> extensions,
+                              bool keep_extension)
+{
+  // Create storage for newest restart files
+  // Note that these might have the same modification time if the simulation was fast.
+  // In that case we're going to save all of the "newest" files and sort it out momentarily
+  time_t newest_time = 0;
+  std::list<std::string> newest_restart_files;
+
+  // Loop through all possible files and store the newest
+  for (const auto & cp_file : checkpoint_files)
+  {
+    if (find_if(extensions.begin(), extensions.end(), [cp_file](const std::string & ext) {
+          return MooseUtils::hasExtension(cp_file, ext);
+        }) != extensions.end())
+    {
+      struct stat stats;
+      stat(cp_file.c_str(), &stats);
+
+      time_t mod_time = stats.st_mtime;
+      if (mod_time > newest_time)
+      {
+        newest_restart_files.clear(); // If the modification time is greater, clear the list
+        newest_time = mod_time;
+      }
+
+      if (mod_time == newest_time)
+        newest_restart_files.push_back(cp_file);
+    }
+  }
+
+  // Loop through all of the newest files according the number in the file name
+  int max_file_num = -1;
+  std::string max_base;
+  std::string max_file;
+
+  pcrecpp::RE re_file_num(".*?(\\d+)(?:_mesh)?$"); // Pull out the embedded number from the file
+
+  // Now, out of the newest files find the one with the largest number in it
+  for (const auto & res_file : newest_restart_files)
+  {
+    auto dot_pos = res_file.find_last_of(".");
+    auto the_base = res_file.substr(0, dot_pos);
+    int file_num = 0;
+
+    re_file_num.FullMatch(the_base, &file_num);
+
+    if (file_num > max_file_num)
+    {
+      max_file_num = file_num;
+      max_base = the_base;
+      max_file = res_file;
+    }
+  }
+
+  // Error if nothing was located
+  if (max_file_num == -1)
+  {
+    max_base.clear();
+    max_file.clear();
+  }
+
+  return keep_extension ? max_file : max_base;
+}

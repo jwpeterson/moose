@@ -13,6 +13,14 @@
   richardsVarNames_UO = PPNames
 []
 
+[Functions]
+  [./dts]
+    type = PiecewiseLinear
+    y = '1E-4 1E-3 1E-2 2E-2 5E-2 6E-2 0.1 0.2'
+    x =  '0    1E-2 1E-1 1    5    20   40  41'
+  [../]
+[]
+
 [UserObjects]
   [./PPNames]
     type = RichardsVarNames
@@ -157,7 +165,7 @@
     type = DirichletBC
     variable = pgas
     boundary = left
-    value = 1E6+1000
+    value = 1E6
   [../]
   [./right_w]
     type = DirichletBC
@@ -169,7 +177,7 @@
     type = DirichletBC
     variable = pgas
     boundary = right
-    value = 0+1000
+    value = 0
   [../]
 []
 
@@ -233,8 +241,7 @@
 
   [./TimeStepper]
     type = FunctionDT
-    time_dt = '1E-4 1E-3 1E-2 2E-2 5E-2 6E-2 0.1 0.2'
-    time_t =  '0    1E-2 1E-1 1    5    20   40  41'
+    function = dts
   [../]
 []
 

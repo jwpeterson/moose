@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "XFEM.h"
 
@@ -1151,14 +1153,16 @@ XFEM::cutMeshWithEFA(NonlinearSystemBase & nl, AuxiliarySystem & aux)
       EFAElement2D * new_efa_elem2d = dynamic_cast<EFAElement2D *>(new_elements[i]);
       if (!new_efa_elem2d)
         mooseError("EFAelem is not of EFAelement2D type");
-      xfce = new XFEMCutElem2D(libmesh_elem, new_efa_elem2d, (*_material_data)[0]->nQPoints());
+      xfce = new XFEMCutElem2D(
+          libmesh_elem, new_efa_elem2d, (*_material_data)[0]->nQPoints(), libmesh_elem->n_sides());
     }
     else if (_mesh->mesh_dimension() == 3)
     {
       EFAElement3D * new_efa_elem3d = dynamic_cast<EFAElement3D *>(new_elements[i]);
       if (!new_efa_elem3d)
         mooseError("EFAelem is not of EFAelement3D type");
-      xfce = new XFEMCutElem3D(libmesh_elem, new_efa_elem3d, (*_material_data)[0]->nQPoints());
+      xfce = new XFEMCutElem3D(
+          libmesh_elem, new_efa_elem3d, (*_material_data)[0]->nQPoints(), libmesh_elem->n_sides());
     }
     _cut_elem_map.insert(std::pair<unique_id_type, XFEMCutElem *>(libmesh_elem->unique_id(), xfce));
     efa_id_to_new_elem.insert(std::make_pair(efa_child_id, libmesh_elem));
@@ -1504,6 +1508,24 @@ XFEM::getXFEMWeights(MooseArray<Real> & weights,
   {
     mooseAssert(xfce != NULL, "Must have valid XFEMCutElem object here");
     xfce->getWeightMultipliers(weights, qrule, getXFEMQRule(), q_points);
+    have_weights = true;
+  }
+  return have_weights;
+}
+
+bool
+XFEM::getXFEMFaceWeights(MooseArray<Real> & weights,
+                         const Elem * elem,
+                         QBase * qrule,
+                         const MooseArray<Point> & q_points,
+                         unsigned int side)
+{
+  bool have_weights = false;
+  XFEMCutElem * xfce = NULL;
+  if (isElemCut(elem, xfce))
+  {
+    mooseAssert(xfce != NULL, "Must have valid XFEMCutElem object here");
+    xfce->getFaceWeightMultipliers(weights, qrule, getXFEMQRule(), q_points, side);
     have_weights = true;
   }
   return have_weights;

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // Moose includes
 #include "ElementsIntersectedByPlane.h"
@@ -31,11 +26,8 @@ findElementsIntersectedByPlane(const Plane & plane,
                                std::vector<const Elem *> & intersected_elems)
 {
   // Loop over all elements to find elements intersected by the plane
-  MeshBase::const_element_iterator el = mesh.elements_begin();
-  const MeshBase::const_element_iterator end_el = mesh.elements_end();
-  for (; el != end_el; ++el)
+  for (const auto & elem : mesh.element_ptr_range())
   {
-    const Elem * elem = *el;
     bool intersected = false;
 
     // Check whether the first node of this element is below or above the plane

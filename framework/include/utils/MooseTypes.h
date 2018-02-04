@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MOOSETYPES_H
 #define MOOSETYPES_H
@@ -23,6 +18,10 @@
 #include "libmesh/elem.h"
 #include "libmesh/petsc_macro.h"
 #include "libmesh/boundary_info.h"
+#include "libmesh/parameters.h"
+
+// BOOST include
+#include "bitmask_operators.h"
 
 #include <string>
 #include <vector>
@@ -81,37 +80,6 @@ typedef unsigned int THREAD_ID;
 typedef StoredRange<std::vector<dof_id_type>::iterator, dof_id_type> NodeIdRange;
 typedef StoredRange<std::vector<const Elem *>::iterator, const Elem *> ConstElemPointerRange;
 
-/// Execution flags - when is the object executed/evaluated
-// Note: If this enum is changed, make sure to modify:
-//   (1) the local function populateExecTypes in Moose.C.
-//   (2) the function in Conversion.C: initExecStoreType()
-//   (3) the method SetupInterface::getExecuteOptions
-//   (4) the function Output::getExecuteOptions
-enum ExecFlagType
-{
-  EXEC_NONE = 0x00, // 0
-  /// Object is evaluated only once at the beginning of the simulation
-  EXEC_INITIAL = 0x01, // 1
-  /// Object is evaluated in every residual computation
-  EXEC_LINEAR = 0x02, // 2
-  /// Object is evaluated in every jacobian computation
-  EXEC_NONLINEAR = 0x04, // 4
-  /// Object is evaluated at the end of every time step
-  EXEC_TIMESTEP_END = 0x08, // 8
-  /// Object is evaluated at the beginning of every time step
-  EXEC_TIMESTEP_BEGIN = 0x10, // 16
-  /// Object is evaluated at the end of the simulations (output only)
-  EXEC_FINAL = 0x20, // 32
-  /// Forces execution to occur (output only)
-  EXEC_FORCED = 0x40, // 64
-  /// Forces execution on failed solve (output only)
-  EXEC_FAILED = 0x80, // 128
-  /// For use with custom executioners that want to fire objects at a specific time
-  EXEC_CUSTOM = 0x100, // 256
-  /// Objects is evaluated on subdomain
-  EXEC_SUBDOMAIN = 0x200 // 512
-};
-
 namespace Moose
 {
 const SubdomainID ANY_BLOCK_ID = libMesh::Elem::invalid_subdomain_id - 1;
@@ -135,7 +103,7 @@ enum MaterialDataType
 };
 
 /**
- * Flag for AuxKernel related exeuction type.
+ * Flag for AuxKernel related execution type.
  */
 enum AuxGroup
 {
@@ -144,11 +112,6 @@ enum AuxGroup
   POST_AUX = 2,
   ALL = 3
 };
-
-/**
- * A static list of all the exec types.
- */
-extern const std::vector<ExecFlagType> exec_types;
 
 /**
  * Framework-wide stuff
@@ -352,7 +315,47 @@ enum MffdType
   MFFD_WP,
   MFFD_DS
 };
+
+/**
+ * Type of patch update strategy for modeling node-face constraints or contact
+ */
+enum PatchUpdateType
+{
+  Never,
+  Always,
+  Auto,
+  Iteration
+};
+
+/**
+ * Main types of Relationship Managers
+ */
+enum class RelationshipManagerType : unsigned char
+{
+  Invalid = 0x0,
+  Geometric = 0x1,
+  Algebraic = 0x2
+};
+
+std::string stringify(const Moose::RelationshipManagerType & t);
 }
+
+namespace libMesh
+{
+template <>
+inline void
+print_helper(std::ostream & os, const Moose::RelationshipManagerType * param)
+{
+  // Specialization so that we don't print out unprintable characters
+  os << Moose::stringify(*param);
+}
+}
+
+template <>
+struct enable_bitmask_operators<Moose::RelationshipManagerType>
+{
+  static const bool enable = true;
+};
 
 /**
  * This Macro is used to generate std::string derived types useful for
@@ -373,7 +376,10 @@ enum MffdType
 
 // Instantiate new Types
 
-/// This type is for expected filenames, it can be used to trigger open file dialogs in the GUI
+/// This type is for expected (i.e. input) file names or paths that your simulation needs.  If
+/// relative paths are assigned to this type, they are treated/modified to be relative to the
+/// location of the simulation's main input file's directory.  It can be used to trigger open file
+/// dialogs in the GUI.
 DerivativeStringClass(FileName);
 
 /// This type is for expected filenames where the extension is unwanted, it can be used to trigger open file dialogs in the GUI

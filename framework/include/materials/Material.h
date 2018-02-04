@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MATERIAL_H
 #define MATERIAL_H
@@ -32,7 +27,6 @@
 #include "VectorPostprocessorInterface.h"
 #include "DependencyResolverInterface.h"
 #include "Restartable.h"
-#include "ZeroInterface.h"
 #include "MeshChangedInterface.h"
 #include "OutputInterface.h"
 #include "RandomInterface.h"
@@ -66,7 +60,6 @@ class Material : public MooseObject,
                  public VectorPostprocessorInterface,
                  public DependencyResolverInterface,
                  public Restartable,
-                 public ZeroInterface,
                  public MeshChangedInterface,
                  public OutputInterface,
                  public RandomInterface
@@ -377,8 +370,9 @@ template <typename T>
 MaterialProperty<T> &
 Material::declarePropertyOld(const std::string & prop_name)
 {
-  mooseDoOnce(mooseDeprecated("declarePropertyOld is deprecated and not needed anymore.\nUse "
-                              "getPropertyOld (only) if a reference is required in this class."));
+  mooseDoOnce(
+      mooseDeprecated("declarePropertyOld is deprecated and not needed anymore.\nUse "
+                      "getMaterialPropertyOld (only) if a reference is required in this class."));
   registerPropName(prop_name, false, Material::OLD);
   return _material_data->declarePropertyOld<T>(prop_name);
 }
@@ -387,8 +381,9 @@ template <typename T>
 MaterialProperty<T> &
 Material::declarePropertyOlder(const std::string & prop_name)
 {
-  mooseDoOnce(mooseDeprecated("declarePropertyOlder is deprecated and not needed anymore.  Use "
-                              "getPropertyOlder (only) if a reference is required in this class."));
+  mooseDoOnce(
+      mooseDeprecated("declarePropertyOlder is deprecated and not needed anymore.  Use "
+                      "getMaterialPropertyOlder (only) if a reference is required in this class."));
   registerPropName(prop_name, false, Material::OLDER);
   return _material_data->declarePropertyOlder<T>(prop_name);
 }

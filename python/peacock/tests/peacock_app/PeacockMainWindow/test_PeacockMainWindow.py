@@ -1,4 +1,13 @@
 #!/usr/bin/env python
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 from peacock.PeacockMainWindow import PeacockMainWindow
 from peacock.utils import Testing
 import argparse, os
@@ -21,6 +30,7 @@ class Tests(Testing.PeacockTester):
         w._showConsole()
         self.assertEqual(w.console.isVisible(), True)
         w.setPythonVariable("foo", "bar")
+        w.tab_plugin.InputFileEditorWithMesh.MeshViewerPlugin.reset()
 
     def testConnections(self):
         w = self.newWidget(args=[])
@@ -40,6 +50,8 @@ class Tests(Testing.PeacockTester):
         w.tab_plugin.ExecuteTabPlugin.ExecuteRunnerPlugin.runClicked()
         Testing.process_events(t=2)
         self.assertTrue(os.path.exists("out_transient.e"))
+
+        w.tab_plugin.InputFileEditorWithMesh.MeshViewerPlugin.reset()
 
 
 if __name__ == '__main__':

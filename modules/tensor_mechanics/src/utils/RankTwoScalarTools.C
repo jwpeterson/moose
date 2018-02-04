@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "RankTwoScalarTools.h"
 
@@ -272,7 +274,7 @@ radialStress(const RankTwoTensor & stress,
   Point radial_norm;
   normalPositionVector(point1, point2, curr_point, radial_norm);
 
-  // Compute the scalar stress component in the direciton of the normal vector from the
+  // Compute the scalar stress component in the direction of the normal vector from the
   // user-defined axis of rotation.
   Real radial_stress = 0.0;
   for (unsigned int i = 0; i < 3; ++i)

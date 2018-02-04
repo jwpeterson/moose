@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SlaveNeighborhoodThread.h"
 
@@ -55,8 +50,6 @@ SlaveNeighborhoodThread::SlaveNeighborhoodThread(SlaveNeighborhoodThread & x,
 void
 SlaveNeighborhoodThread::operator()(const NodeIdRange & range)
 {
-  processor_id_type processor_id = _mesh.processor_id();
-
   unsigned int patch_size =
       std::min(_patch_size, static_cast<unsigned int>(_trial_master_nodes.size()));
 
@@ -81,16 +74,18 @@ SlaveNeighborhoodThread::operator()(const NodeIdRange & range)
 
     _kd_tree.neighborSearch(query_pt, patch_size, return_index);
 
-    std::vector<dof_id_type> neighbor_nodes(patch_size);
-    for (unsigned int i = 0; i < patch_size; ++i)
+    std::vector<dof_id_type> neighbor_nodes(return_index.size());
+    for (unsigned int i = 0; i < return_index.size(); ++i)
       neighbor_nodes[i] = _trial_master_nodes[return_index[i]];
+
+    processor_id_type processor_id = _mesh.processor_id();
 
     /**
      * Now see if _this_ processor needs to keep track of this slave and it's neighbors
      * We're going to see if this processor owns the slave, any of the neighborhood nodes
      * or any of the elements connected to either set.  If it does then we're going to ghost
-     * all of the elements connected to the slave node and the neighborhood nodes to this processor.
-     * This is a very conservative approach that we might revisit later.
+     * all of the elements connected to the slave node and the neighborhood nodes to this
+     * processor. This is a very conservative approach that we might revisit later.
      */
 
     bool need_to_track = false;
@@ -161,7 +156,6 @@ SlaveNeighborhoodThread::operator()(const NodeIdRange & range)
             _ghosted_elems.insert(dof);
         }
       }
-
       // Now add elements connected to the neighbor nodes to the ghosted list
       for (unsigned int neighbor_it = 0; neighbor_it < neighbor_nodes.size(); neighbor_it++)
       {
@@ -181,6 +175,6 @@ void
 SlaveNeighborhoodThread::join(const SlaveNeighborhoodThread & other)
 {
   _slave_nodes.insert(_slave_nodes.end(), other._slave_nodes.begin(), other._slave_nodes.end());
-  _neighbor_nodes.insert(other._neighbor_nodes.begin(), other._neighbor_nodes.end());
   _ghosted_elems.insert(other._ghosted_elems.begin(), other._ghosted_elems.end());
+  _neighbor_nodes.insert(other._neighbor_nodes.begin(), other._neighbor_nodes.end());
 }

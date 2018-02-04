@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef ADVANCEDOUTPUT_H
 #define ADVANCEDOUTPUT_H
@@ -28,6 +23,11 @@ class FileOutput;
 class PetscOutput;
 class Console;
 class TransientMultiApp;
+
+class AdvancedOutput;
+
+template <>
+InputParameters validParams<AdvancedOutput>();
 
 /**
  * Based class for output objects
@@ -264,9 +264,9 @@ private:
    * Initialize the possible execution types
    * @param name The name of the supplied MultiMoose enum from the _execute_on std::map (e.g.,
    * scalars)
-   * @param input The MultiMooseEnum for output type flags to initialize
+   * @param input The ExecFlagEnum for output type flags to initialize
    */
-  void initExecutionTypes(const std::string & name, MultiMooseEnum & input);
+  void initExecutionTypes(const std::string & name, ExecFlagEnum & input);
 
   /**
    * Parses the user-supplied input for hiding and showing variables and postprocessors into
@@ -304,9 +304,9 @@ private:
    *
    * Each output object may have a varying set of supported output types (e.g., elemental
    * variables may not be supported). This private, static method populates the InputParameters
-   * object with the correct parameters based on the items contained in the MultiMooseEnum.
+   * object with the correct parameters based on the items contained in the ExecFlagEnum.
    *
-   * This method is private, users should utlize the Output::enableOutputTypes method
+   * This method is private, users should utilize the Output::enableOutputTypes method
    *
    * @see Output::enableOutputTypes
    */
@@ -398,8 +398,8 @@ AdvancedOutput::initPostprocessorOrVectorPostprocessorLists(const std::string & 
   // Produce the warning when 'outputs' is used, but postprocessor output is disabled
   if (has_limited_pps && isParamValid(execute_on_name))
   {
-    const MultiMooseEnum & pp_on = getParam<MultiMooseEnum>(execute_on_name);
-    if (pp_on.contains("none"))
+    const ExecFlagEnum & pp_on = getParam<ExecFlagEnum>(execute_on_name);
+    if (pp_on.contains(EXEC_NONE))
     {
       if (execute_on_name == "execute_postprocessors_on")
         mooseWarning("A Postprocessor utilizes the 'outputs' parameter; however, postprocessor "

@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef GRAINTRACKER_H
 #define GRAINTRACKER_H
@@ -177,7 +179,7 @@ protected:
   const int _tracking_step;
 
   /// The thickness of the halo surrounding each grain
-  const unsigned int _halo_level;
+  const unsigned short _halo_level;
 
   /// Depth of renumbering recursion (a depth of zero means no recursion)
   static const unsigned int _max_renumbering_recursion = 4;

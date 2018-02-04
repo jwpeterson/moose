@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "KKSGlobalFreeEnergy.h"
 
 template <>
@@ -60,7 +63,7 @@ KKSGlobalFreeEnergy::computeValue()
   const Real h = _prop_h[_qp];
 
   // Include bulk energy and additional contributions
-  Real total_energy = _prop_fa[_qp] * h + _prop_fb[_qp] * (1.0 - h) + _w * _prop_g[_qp] +
+  Real total_energy = _prop_fa[_qp] * (1.0 - h) + _prop_fb[_qp] * h + _w * _prop_g[_qp] +
                       _additional_free_energy[_qp];
 
   // Calculate interfacial energy of each variable

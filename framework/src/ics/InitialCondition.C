@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "InitialCondition.h"
 #include "FEProblem.h"
@@ -47,6 +42,7 @@ validParams<InitialCondition>()
 
 InitialCondition::InitialCondition(const InputParameters & parameters)
   : MooseObject(parameters),
+    BlockRestrictable(this),
     Coupleable(this,
                getParam<SystemBase *>("_sys")
                    ->getVariable(parameters.get<THREAD_ID>("_tid"),
@@ -54,13 +50,11 @@ InitialCondition::InitialCondition(const InputParameters & parameters)
                    .isNodal()),
     FunctionInterface(this),
     UserObjectInterface(this),
-    BlockRestrictable(parameters),
-    BoundaryRestrictable(parameters, true), // true for being nodal
+    BoundaryRestrictable(this, _c_nodal),
     DependencyResolverInterface(),
     Restartable(parameters, "InitialConditions"),
-    ZeroInterface(parameters),
-    _fe_problem(*parameters.getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")),
-    _sys(*parameters.getCheckedPointerParam<SystemBase *>("_sys")),
+    _fe_problem(*getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")),
+    _sys(*getCheckedPointerParam<SystemBase *>("_sys")),
     _tid(getParam<THREAD_ID>("_tid")),
     _assembly(_fe_problem.assembly(_tid)),
     _t(_fe_problem.time()),

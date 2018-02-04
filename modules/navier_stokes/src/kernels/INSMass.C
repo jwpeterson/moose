@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "INSMass.h"
 #include "Function.h"
 
@@ -57,10 +60,10 @@ INSMass::computeQpPGResidual()
       _transient_term ? timeDerivativeTerm() : RealVectorValue(0, 0, 0);
   RealVectorValue convective_term = _convective_term ? convectiveTerm() : RealVectorValue(0, 0, 0);
   Real r = -1. / _rho[_qp] * tau() * _grad_test[_i][_qp] *
-           (strongPressureTerm() + bodyForcesTerm() + viscous_term + convective_term +
-            transient_term - RealVectorValue(_x_ffn.value(_t, _q_point[_qp]),
-                                             _y_ffn.value(_t, _q_point[_qp]),
-                                             _z_ffn.value(_t, _q_point[_qp])));
+           (strongPressureTerm() + gravityTerm() + viscous_term + convective_term + transient_term -
+            RealVectorValue(_x_ffn.value(_t, _q_point[_qp]),
+                            _y_ffn.value(_t, _q_point[_qp]),
+                            _z_ffn.value(_t, _q_point[_qp])));
 
   return r;
 }
@@ -134,7 +137,7 @@ INSMass::computeQpPGOffDiagJacobian(unsigned comp)
              (d_convective_term_d_u_comp + d_viscous_term_d_u_comp + d_transient_term_d_u_comp) -
          1. / _rho[_qp] * dTauDUComp(comp) * _grad_test[_i][_qp] *
              (convective_term + viscous_term + transient_term + strongPressureTerm() +
-              bodyForcesTerm() - RealVectorValue(_x_ffn.value(_t, _q_point[_qp]),
-                                                 _y_ffn.value(_t, _q_point[_qp]),
-                                                 _z_ffn.value(_t, _q_point[_qp])));
+              gravityTerm() - RealVectorValue(_x_ffn.value(_t, _q_point[_qp]),
+                                              _y_ffn.value(_t, _q_point[_qp]),
+                                              _z_ffn.value(_t, _q_point[_qp])));
 }

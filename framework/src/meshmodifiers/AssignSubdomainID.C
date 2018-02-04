@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "AssignSubdomainID.h"
 #include "MooseMesh.h"
@@ -32,15 +27,6 @@ AssignSubdomainID::AssignSubdomainID(const InputParameters & parameters)
 void
 AssignSubdomainID::modify()
 {
-  auto & mesh = _mesh_ptr->getMesh();
-
-  auto elem_it = mesh.elements_begin();
-  const auto end_it = mesh.elements_end();
-
-  for (; elem_it != end_it; ++elem_it)
-  {
-    auto elem = *elem_it;
-
+  for (auto & elem : _mesh_ptr->getMesh().element_ptr_range())
     elem->subdomain_id() = _subdomain_id;
-  }
 }

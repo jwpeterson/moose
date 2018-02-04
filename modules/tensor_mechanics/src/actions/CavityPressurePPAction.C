@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "CavityPressurePPAction.h"
 #include "Factory.h"
 #include "FEProblem.h"
@@ -27,7 +30,7 @@ CavityPressurePPAction::act()
   std::string uo_name = _name + "UserObject";
 
   InputParameters params = _factory.getValidParams("CavityPressurePostprocessor");
-  params.set<MultiMooseEnum>("execute_on") = "initial linear";
+  params.set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_LINEAR};
   params.set<UserObjectName>("cavity_pressure_uo") = uo_name;
   params.set<std::string>("quantity") = "cavity_pressure";
 

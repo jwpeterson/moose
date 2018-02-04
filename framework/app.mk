@@ -108,7 +108,7 @@ endif
 
 # header files
 include_dirs	:= $(shell find $(depend_dirs) -type d | grep -v "\.svn")
-app_INCLUDE     := $(foreach i, $(include_dirs), -I$(i)) $(ADDITIONAL_INCLUDES)
+include_files	:= $(shell find $(depend_dirs) -name "*.[hf]" | grep -v "\.svn")
 
 # clang static analyzer files
 app_analyzer := $(patsubst %.C, %.plist.$(obj-suffix), $(srcfiles))
@@ -125,6 +125,18 @@ ifeq ($(LIBRARY_SUFFIX),yes)
 else
   app_test_LIB     := $(APPLICATION_DIR)/test/lib/lib$(APPLICATION_NAME)_test-$(METHOD).la
 endif
+
+# all_header_directory
+all_header_dir := $(APPLICATION_DIR)/build/header_symlinks
+
+# header file links
+
+link_names := $(foreach i, $(include_files), $(all_header_dir)/$(notdir $(i)))
+
+$(eval $(call all_header_dir_rule, $(all_header_dir)))
+$(call symlink_rules, $(all_header_dir), $(include_files))
+
+header_symlinks:: $(all_header_dir) $(link_names)
 
 # application
 app_EXEC    := $(APPLICATION_DIR)/$(APPLICATION_NAME)-$(METHOD)
@@ -164,7 +176,7 @@ endif
 app_LIBS       := $(app_LIB) $(app_LIBS)
 app_LIBS_other := $(filter-out $(app_LIB),$(app_LIBS))
 app_HEADERS    := $(app_HEADER) $(app_HEADERS)
-app_INCLUDES   += $(app_INCLUDE)
+app_INCLUDES   += -I$(all_header_dir) $(ADDITIONAL_INCLUDES)
 app_DIRS       += $(APPLICATION_DIR)
 
 # WARNING: the += operator does NOT work here!
@@ -194,15 +206,17 @@ endif
 
 BUILD_EXEC :=
 
-app_GIT_DIR := $(shell cd "$(APPLICATION_DIR)" && git rev-parse --show-toplevel)
+app_GIT_DIR := $(shell cd "$(APPLICATION_DIR)" && which git &> /dev/null && git rev-parse --show-toplevel)
 # Use wildcard in case the files don't exist
 app_HEADER_deps := $(wildcard $(app_GIT_DIR)/.git/HEAD $(app_GIT_DIR)/.git/index)
 # Target-specific Variable Values (See GNU-make manual)
 $(app_HEADER): curr_dir    := $(APPLICATION_DIR)
 $(app_HEADER): curr_app    := $(APPLICATION_NAME)
+$(app_HEADER): all_header_dir := $(all_header_dir)
 $(app_HEADER): $(app_HEADER_deps)
 	@echo "MOOSE Checking if header needs updating: "$@"..."
 	$(shell $(FRAMEWORK_DIR)/scripts/get_repo_revision.py $(curr_dir) $@ $(curr_app))
+	@ln -sf $@ $(all_header_dir)
 
 # Target-specific Variable Values (See GNU-make manual)
 $(app_LIB): curr_objs := $(app_objects)
@@ -232,10 +246,10 @@ $(app_test_LIB): $(app_HEADER) $(app_plugin_deps) $(depend_libs) $(app_test_obje
 	@$(libmesh_LIBTOOL) --mode=install --quiet install -c $@ $(curr_dir)/lib
 endif
 
-$(app_EXEC): $(app_LIBS) $(mesh_library) $(main_object) $(app_test_LIB) $(depend_test_libs)
+$(app_EXEC): $(app_LIBS) $(mesh_library) $(main_object) $(app_test_LIB) $(depend_test_libs) $(ADDITIONAL_DEPEND_LIBS)
 	@echo "Linking Executable "$@"..."
 	@$(libmesh_LIBTOOL) --tag=CXX $(LIBTOOLFLAGS) --mode=link --quiet \
-	  $(libmesh_CXX) $(libmesh_CXXFLAGS) -o $@ $(main_object) $(app_LIBS) $(app_test_LIB) $(depend_test_libs) $(libmesh_LIBS) $(libmesh_LDFLAGS) $(depend_test_libs_flags) $(EXTERNAL_FLAGS) $(ADDITIONAL_LIBS)
+	  $(libmesh_CXX) $(libmesh_CXXFLAGS) -o $@ $(main_object) $(app_test_LIB) $(app_LIBS) $(depend_test_libs) $(libmesh_LIBS) $(libmesh_LDFLAGS) $(depend_test_libs_flags) $(EXTERNAL_FLAGS) $(ADDITIONAL_LIBS)
 
 # Clang static analyzer
 sa:: $(app_analyzer)

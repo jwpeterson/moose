@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef DISPLACEDPROBLEM_H
 #define DISPLACEDPROBLEM_H
@@ -155,8 +150,9 @@ public:
 
   virtual bool reinitDirac(const Elem * elem, THREAD_ID tid) override;
   virtual void reinitElem(const Elem * elem, THREAD_ID tid) override;
-  virtual void
-  reinitElemPhys(const Elem * elem, std::vector<Point> phys_points_in_elem, THREAD_ID tid) override;
+  virtual void reinitElemPhys(const Elem * elem,
+                              const std::vector<Point> & phys_points_in_elem,
+                              THREAD_ID tid) override;
   virtual void
   reinitElemFace(const Elem * elem, unsigned int side, BoundaryID bnd_id, THREAD_ID tid) override;
   virtual void reinitNode(const Node * node, THREAD_ID tid) override;

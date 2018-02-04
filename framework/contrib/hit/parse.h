@@ -108,7 +108,11 @@ std::string pathNorm(const std::string & path);
 /// pathJoin a joined version of the given hit (relative) paths as single hit path.
 std::string pathJoin(const std::vector<std::string> & paths);
 
-/// Node represents an object in a parsed hit tree.
+/// Node represents an object in a parsed hit tree.  Each node manages the memory for its child
+/// nodes.  It is safe to delete any node in the tree; doing so will also delete that node's
+/// children recursively.  It is not safe to place a single node in multiple trees.  Instead, use
+/// the node's clone function (which operates recursively) to create a new (sub)tree for placement
+/// in alternate trees.
 class Node
 {
 public:
@@ -412,8 +416,9 @@ void merge(Node * from, Node * into);
 /// explode walks the tree converting/exploding any fields that have path separators into them into
 /// actually sections/subsections/etc. with the final path element as the field name.  For example,
 /// "foo/bar=42" becomes nodes with the structure "[foo] bar=42 []".  If nodes for sections already
-/// exist in the tree, the fields will be moved into them rather than new sections created.
-void explode(Node * n);
+/// exist in the tree, the fields will be moved into them rather than new sections created.  The
+/// returned node is the root of the exploded tree.
+Node * explode(Node * n);
 
 } // namespace hit
 

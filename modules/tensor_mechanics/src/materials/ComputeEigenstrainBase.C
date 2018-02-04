@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "ComputeEigenstrainBase.h"
 
 #include "RankTwoTensor.h"
@@ -21,9 +24,11 @@ validParams<ComputeEigenstrainBase>()
                                        "Material property name for the eigenstrain tensor computed "
                                        "by this model. IMPORTANT: The name of this property must "
                                        "also be provided to the strain calculator.");
-  params.addParam<bool>("incremental_form",
-                        false,
-                        "Should the eigenstrain be in incremental form (for incremental models)?");
+  params.addDeprecatedParam<bool>(
+      "incremental_form",
+      false,
+      "Should the eigenstrain be in incremental form (for incremental models)?",
+      "This parameter no longer has any effect. Simply remove it.");
   return params;
 }
 
@@ -31,10 +36,7 @@ ComputeEigenstrainBase::ComputeEigenstrainBase(const InputParameters & parameter
   : Material(parameters),
     _base_name(isParamValid("base_name") ? getParam<std::string>("base_name") + "_" : ""),
     _eigenstrain_name(_base_name + getParam<std::string>("eigenstrain_name")),
-    _incremental_form(getParam<bool>("incremental_form")),
     _eigenstrain(declareProperty<RankTwoTensor>(_eigenstrain_name)),
-    _eigenstrain_old(_incremental_form ? &getMaterialPropertyOld<RankTwoTensor>(_eigenstrain_name)
-                                       : NULL),
     _step_zero(declareRestartableData<bool>("step_zero", true))
 {
 }
@@ -42,8 +44,9 @@ ComputeEigenstrainBase::ComputeEigenstrainBase(const InputParameters & parameter
 void
 ComputeEigenstrainBase::initQpStatefulProperties()
 {
-  if (_incremental_form)
-    _eigenstrain[_qp].zero();
+  // This property can be promoted to be stateful by other models that use it,
+  // so it needs to be initalized.
+  _eigenstrain[_qp].zero();
 }
 
 void

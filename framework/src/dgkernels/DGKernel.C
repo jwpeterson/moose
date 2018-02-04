@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "DGKernel.h"
 #include "Assembly.h"
@@ -71,8 +66,8 @@ Threads::spin_mutex DGKernel::_jacoby_vars_mutex;
 
 DGKernel::DGKernel(const InputParameters & parameters)
   : MooseObject(parameters),
-    BlockRestrictable(parameters),
-    BoundaryRestrictable(parameters, false), // false for _not_ nodal
+    BlockRestrictable(this),
+    BoundaryRestrictable(this, false), // false for _not_ nodal
     SetupInterface(this),
     TransientInterface(this),
     FunctionInterface(this),
@@ -80,10 +75,9 @@ DGKernel::DGKernel(const InputParameters & parameters)
     NeighborCoupleableMooseVariableDependencyIntermediateInterface(this, false, false),
     TwoMaterialPropertyInterface(this, blockIDs(), boundaryIDs()),
     Restartable(parameters, "DGKernels"),
-    ZeroInterface(parameters),
     MeshChangedInterface(parameters),
-    _subproblem(*parameters.get<SubProblem *>("_subproblem")),
-    _sys(*parameters.get<SystemBase *>("_sys")),
+    _subproblem(*getCheckedPointerParam<SubProblem *>("_subproblem")),
+    _sys(*getCheckedPointerParam<SystemBase *>("_sys")),
     _tid(parameters.get<THREAD_ID>("_tid")),
     _assembly(_subproblem.assembly(_tid)),
     _var(_sys.getVariable(_tid, parameters.get<NonlinearVariableName>("variable"))),
@@ -139,9 +133,10 @@ DGKernel::DGKernel(const InputParameters & parameters)
                  " as a save_in variable in " + name());
 
     if (var->feType() != _var.feType())
-      mooseError("Error in " + name() + ". When saving residual values in an Auxiliary variable "
-                                        "the AuxVariable must be the same type as the nonlinear "
-                                        "variable the object is acting on.");
+      paramError(
+          "save_in",
+          "saved-in auxiliary variable is incompatible with the object's nonlinear variable: ",
+          moose::internal::incompatVarMsg(*var, _var));
 
     _save_in[i] = var;
     var->sys().addVariableToZeroOnResidual(_save_in_strings[i]);
@@ -159,9 +154,10 @@ DGKernel::DGKernel(const InputParameters & parameters)
                  " as a diag_save_in variable in " + name());
 
     if (var->feType() != _var.feType())
-      mooseError("Error in " + name() + ". When saving diagonal Jacobian values in an Auxiliary "
-                                        "variable the AuxVariable must be the same type as the "
-                                        "nonlinear variable the object is acting on.");
+      paramError(
+          "diag_save_in",
+          "saved-in auxiliary variable is incompatible with the object's nonlinear variable: ",
+          moose::internal::incompatVarMsg(*var, _var));
 
     _diag_save_in[i] = var;
     var->sys().addVariableToZeroOnJacobian(_diag_save_in_strings[i]);

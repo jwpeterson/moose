@@ -1,18 +1,14 @@
 #pylint: disable=missing-docstring
-####################################################################################################
-#                                    DO NOT MODIFY THIS HEADER                                     #
-#                   MOOSE - Multiphysics Object Oriented Simulation Environment                    #
-#                                                                                                  #
-#                              (c) 2010 Battelle Energy Alliance, LLC                              #
-#                                       ALL RIGHTS RESERVED                                        #
-#                                                                                                  #
-#                            Prepared by Battelle Energy Alliance, LLC                             #
-#                               Under Contract No. DE-AC07-05ID14517                               #
-#                               With the U. S. Department of Energy                                #
-#                                                                                                  #
-#                               See COPYRIGHT for full restrictions                                #
-####################################################################################################
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
 #pylint: enable=missing-docstring
+
 import re
 import os
 import cgi
@@ -27,15 +23,13 @@ import MooseDocs
 from MooseMarkdownExtension import MooseMarkdownExtension
 from MooseMarkdownCommon import MooseMarkdownCommon
 
-from FactorySystem import ParseGetPot
+# pylint runs during the precheck before the hit python bindings have been build
+# so we need to disable import error checking here.
+# pylint: disable=import-error
+import hit
+# pylint: enable=import-error
 
 LOG = logging.getLogger(__name__)
-
-try:
-    import mooseutils.MooseSourceParser
-    HAVE_MOOSE_CPP_PARSER = True
-except ImportError:
-    HAVE_MOOSE_CPP_PARSER = False
 
 class ListingExtension(MooseMarkdownExtension):
     """
@@ -73,9 +67,6 @@ class ListingExtension(MooseMarkdownExtension):
                               ListingInputPattern(markdown_instance=md, **config),
                               '_begin')
 
-        md.inlinePatterns.add('moose-clang-listing',
-                              ListingClangPattern(markdown_instance=md, **config),
-                              '_begin')
 
 def makeExtension(*args, **kwargs): #pylint: disable=invalid-name
     """Create ListingExtension"""
@@ -95,8 +86,8 @@ class ListingPattern(MooseMarkdownCommon, Pattern):
     def defaultSettings():
         settings = MooseMarkdownCommon.defaultSettings()
         settings['strip-header'] = (True, "When True the MOOSE header is removed for display.")
-        settings['caption'] = (None, "The text caption, if an empty string is provided a link to " \
-                                     "the filename is created, if None is provided no caption is " \
+        settings['caption'] = (None, "The text caption, if an empty string is provided a link to "
+                                     "the filename is created, if None is provided no caption is "
                                      "applied, otherwise the text given is used.")
         settings['language'] = (None, "The language to utilize for providing syntax highlighting.")
         settings['link'] = (True, "Include a link to the filename in the caption.")
@@ -104,18 +95,20 @@ class ListingPattern(MooseMarkdownCommon, Pattern):
         settings['prefix'] = ('', "Text to include prior to the included text.")
         settings['suffix'] = ('', "Text to include after to the included text.")
         settings['indent'] = (0, "The level of indenting to apply to the included text.")
-        settings['strip-leading-whitespace'] = (False, "When True leading white-space is removed " \
+        settings['strip-leading-whitespace'] = (False, "When True leading white-space is removed "
                                                        "from the included text.")
         settings['counter'] = ('listing', "The counter group to associate wit this command.")
-        settings['line'] = (None, "A portion of text that unique identifies a single line to " \
+        settings['line'] = (None, "A portion of text that unique identifies a single line to "
                                   "include.")
-        settings['start'] = (None, "A portion of text that unique identifies the starting " \
-                                   "location for including text, if not provided the beginning " \
+        settings['start'] = (None, "A portion of text that unique identifies the starting "
+                                   "location for including text, if not provided the beginning "
                                    "of the file is utilized.")
-        settings['end'] = (None, "A portion of text that unique identifies the ending location " \
-                                 "for including text, if not provided the end of the file is " \
+        settings['end'] = (None, "A portion of text that unique identifies the ending location "
+                                 "for including text, if not provided the end of the file is "
                                  "used. By default this line is not included in the display.")
-        settings['include-end'] = (False, "When True the texted captured by the 'end' setting is " \
+        settings['include-start'] = (True, "When False the texted captured by the 'start' setting "
+                                           "is excluded in the displayed text.")
+        settings['include-end'] = (False, "When True the texted captured by the 'end' setting is "
                                           "included in the displayed text.")
         settings['pre-style'] = ("overflow-y:scroll;max-height:350px",
                                  "Style attributes to apply to the code area.")
@@ -140,9 +133,8 @@ class ListingPattern(MooseMarkdownCommon, Pattern):
         rel_filename = match.group('filename').lstrip('/')
         filename = os.path.join(self.markdown.current.root_directory, rel_filename)
         if not os.path.exists(filename):
-            msg = "Unable to locate file: {}".format(rel_filename)
-            if hasattr(self.markdown.current, filename):
-                msg += " in {}".format(self.markdwon.current.filename) #pylint: disable=no-member
+            msg = "Unable to locate file {}".format(rel_filename)
+            msg += " in {}".format(self.markdown.current.filename)
             return self.createErrorElement(msg)
 
         # Figure out file extensions
@@ -267,6 +259,7 @@ class ListingPattern(MooseMarkdownCommon, Pattern):
             content = self.extractLineRange(filename,
                                             settings['start'],
                                             settings['end'],
+                                            settings['include-start'],
                                             settings['include-end'])
 
         else:
@@ -297,7 +290,7 @@ class ListingPattern(MooseMarkdownCommon, Pattern):
         return content
 
     @staticmethod
-    def extractLineRange(filename, start, end, include_end):
+    def extractLineRange(filename, start, end, include_start, include_end):
         """
         Function for extracting content between start/end strings.
 
@@ -305,6 +298,7 @@ class ListingPattern(MooseMarkdownCommon, Pattern):
           filename[str]: The name of the file to examine.
           start[str|None]: The starting line (when None is provided the beginning is used).
           end[str|None]: The ending line (when None is provided the end is used).
+          include-start[bool]: If True then the start string is included
           include-end[bool]: If True then the end string is included
         """
 
@@ -319,7 +313,7 @@ class ListingPattern(MooseMarkdownCommon, Pattern):
         if start:
             for i in range(end_idx):
                 if start in lines[i]:
-                    start_idx = i
+                    start_idx = i if include_start else i+1
                     break
         if end:
             for i in range(start_idx, end_idx):
@@ -359,70 +353,15 @@ class ListingInputPattern(ListingPattern):
         if not settings['block']:
             return super(ListingInputPattern, self).extractContent(filename, settings)
 
-        parser = ParseGetPot(filename)
-        node = parser.root_node.getNode(settings['block'])
+        with open(filename) as f:
+            content = f.read()
+
+        root = hit.parse(filename, content)
+        node = root.find(settings['block'])
         if node is not None:
-            return node.createString()
+            return node.render()
 
         return super(ListingInputPattern, self).extractContent(filename, settings)
-
-class ListingClangPattern(ListingPattern):
-    """
-    A markdown extension for including source code snippets using clang python bindings.
-
-    Inputs:
-      make_dir[str]: (required) The MOOSE application directory for running make command.
-      **kwargs: key, value arguments passed to base class.
-    """
-    RE = r'(?<!`)!listing\s+(?P<filename>.*\.[Ch])(?:$|\s+)(?P<settings>.*)'
-
-    @staticmethod
-    def defaultSettings():
-        settings = ListingPattern.defaultSettings()
-        settings['method'] = (None, "The C++ method to return using the clang parser. Using, " \
-                                    "this will bypass other extracting settings (e.g., 'begin' " \
-                                    "and 'end').")
-        settings['declaration'] = (False, "When True the declaration is returned, other size the " \
-                                          "definition is given.")
-        return settings
-
-    def __init__(self, **kwargs):
-        super(ListingClangPattern, self).__init__(**kwargs)
-
-        # The make command to execute
-        self._make_dir = os.path.join(MooseDocs.ROOT_DIR, kwargs.pop('make_dir'))
-        if not os.path.exists(os.path.join(self._make_dir, 'Makefile')):
-            LOG.error("Invalid path provided for make: %s", self._make_dir)
-
-    def handleMatch(self, match):
-        """
-        Produce an error if the Clang parser is not setup correctly (override).
-        """
-        settings = self.getSettings(match.group('settings'))
-        if (settings['method'] is not None) and (not HAVE_MOOSE_CPP_PARSER):
-            return self.createErrorElement("Failed to load python clang python bindings, "
-                                           "thus the 'method' setting will not work.")
-
-        return super(ListingClangPattern, self).handleMatch(match)
-
-    def extractContent(self, filename, settings):
-        """
-        Extract input file content with GetPot parser if 'block' is available. (override)
-        """
-        if not settings['method']:
-            return super(ListingClangPattern, self).extractContent(filename, settings)
-
-        try:
-            parser = mooseutils.MooseSourceParser(self._make_dir)
-            parser.parse(filename)
-            decl, defn = parser.method(settings['method'])
-            if settings['declaration']:
-                return decl
-            return defn
-        except Exception: #pylint: disable=broad-except
-            LOG.error('Failed to parser file (%s) with clang for the %s method.',
-                      filename,
-                      settings['method'])
 
 class ListingFencedBlockPreprocessor(FencedBlockPreprocessor, MooseMarkdownCommon):
     """

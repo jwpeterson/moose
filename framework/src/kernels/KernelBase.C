@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "KernelBase.h"
 #include "Assembly.h"
@@ -64,7 +59,7 @@ validParams<KernelBase>()
 
 KernelBase::KernelBase(const InputParameters & parameters)
   : MooseObject(parameters),
-    BlockRestrictable(parameters),
+    BlockRestrictable(this),
     SetupInterface(this),
     CoupleableMooseVariableDependencyIntermediateInterface(this, false),
     FunctionInterface(this),
@@ -74,16 +69,15 @@ KernelBase::KernelBase(const InputParameters & parameters)
     VectorPostprocessorInterface(this),
     MaterialPropertyInterface(this, blockIDs()),
     RandomInterface(parameters,
-                    *parameters.get<FEProblemBase *>("_fe_problem_base"),
+                    *parameters.getCheckedPointerParam<FEProblemBase *>("_fe_problem_base"),
                     parameters.get<THREAD_ID>("_tid"),
                     false),
     GeometricSearchInterface(this),
     Restartable(parameters, "Kernels"),
-    ZeroInterface(parameters),
     MeshChangedInterface(parameters),
-    _subproblem(*parameters.get<SubProblem *>("_subproblem")),
-    _fe_problem(*parameters.get<FEProblemBase *>("_fe_problem_base")),
-    _sys(*parameters.get<SystemBase *>("_sys")),
+    _subproblem(*getCheckedPointerParam<SubProblem *>("_subproblem")),
+    _fe_problem(*getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")),
+    _sys(*getCheckedPointerParam<SystemBase *>("_sys")),
     _tid(parameters.get<THREAD_ID>("_tid")),
     _assembly(_subproblem.assembly(_tid)),
     _var(_sys.getVariable(_tid, parameters.get<NonlinearVariableName>("variable"))),
@@ -114,13 +108,13 @@ KernelBase::KernelBase(const InputParameters & parameters)
     MooseVariable * var = &_subproblem.getVariable(_tid, _save_in_strings[i]);
 
     if (_fe_problem.getNonlinearSystemBase().hasVariable(_save_in_strings[i]))
-      mooseError("Trying to use solution variable " + _save_in_strings[i] +
-                 " as a save_in variable in " + name());
+      paramError("save_in", "cannot use solution variable as save-in variable");
 
     if (var->feType() != _var.feType())
-      mooseError("Error in " + name() + ". When saving residual values in an Auxiliary variable "
-                                        "the AuxVariable must be the same type as the nonlinear "
-                                        "variable the object is acting on.");
+      paramError(
+          "save_in",
+          "saved-in auxiliary variable is incompatible with the object's nonlinear variable: ",
+          moose::internal::incompatVarMsg(*var, _var));
 
     _save_in[i] = var;
     var->sys().addVariableToZeroOnResidual(_save_in_strings[i]);
@@ -134,13 +128,13 @@ KernelBase::KernelBase(const InputParameters & parameters)
     MooseVariable * var = &_subproblem.getVariable(_tid, _diag_save_in_strings[i]);
 
     if (_fe_problem.getNonlinearSystemBase().hasVariable(_diag_save_in_strings[i]))
-      mooseError("Trying to use solution variable " + _diag_save_in_strings[i] +
-                 " as a diag_save_in variable in " + name());
+      paramError("diag_save_in", "cannot use solution variable as diag save-in variable");
 
     if (var->feType() != _var.feType())
-      mooseError("Error in " + name() + ". When saving diagonal Jacobian values in an Auxiliary "
-                                        "variable the AuxVariable must be the same type as the "
-                                        "nonlinear variable the object is acting on.");
+      paramError(
+          "diag_save_in",
+          "saved-in auxiliary variable is incompatible with the object's nonlinear variable: ",
+          moose::internal::incompatVarMsg(*var, _var));
 
     _diag_save_in[i] = var;
     var->sys().addVariableToZeroOnJacobian(_diag_save_in_strings[i]);

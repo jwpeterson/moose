@@ -1,3 +1,12 @@
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 from TestHarness import util
 from RunApp import RunApp
 
@@ -23,7 +32,8 @@ class RunException(RunApp):
 
     def checkRunnable(self, options):
         if options.enable_recover:
-            self.setStatus('RunException RECOVER', self.bucket_skip)
+            self.addCaveats('RunException RECOVER')
+            self.setStatus(self.bucket_skip.status, self.bucket_skip)
             return False
         return RunApp.checkRunnable(self, options)
 
@@ -46,11 +56,15 @@ class RunException(RunApp):
         # will handle them seperately
         if specs.isValid('expect_err'):
             if not util.checkOutputForPattern(output, specs['expect_err']):
-                reason = 'NO EXPECTED ERR'
+                reason = 'EXPECTED ERROR MISSING'
         elif specs.isValid('expect_assert'):
-            if options.method == 'dbg':  # Only check asserts in debug mode
+            if options.method in ['dbg', 'devel']:  # Only check asserts in debug and devel modes
                 if not util.checkOutputForPattern(output, specs['expect_assert']):
-                    reason = 'NO EXPECTED ASSERT'
+                    reason = 'EXPECTED ASSERT MISSING'
+
+        # If we've set a reason right here, we should report the pattern that we were unable to match.
+        if reason != '':
+            output += "#"*80 + "\n\nUnable to match the following pattern against the program's output:\n\n" + specs['expect_err'] + "\n"
 
         if reason == '':
             RunApp.testFileOutput(self, moose_dir, options, output)

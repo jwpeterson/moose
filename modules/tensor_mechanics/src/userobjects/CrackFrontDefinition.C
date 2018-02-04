@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "CrackFrontDefinition.h"
 
@@ -81,13 +83,19 @@ addCrackFrontDefinitionParams(InputParameters & params)
                              q_function_type,
                              "The method used to define the integration domain. Options are: " +
                                  q_function_type.getRawNames());
+  params.addParam<UserObjectName>(
+      "crack_front_points_provider",
+      "The UserObject provides the crack front points from XFEM GeometricCutObject");
+  params.addParam<unsigned int>(
+      "number_points_from_provider",
+      "The number of crack front points, only needed if crack_front_points_provider is used.");
 }
 
 const Real CrackFrontDefinition::_tol = 1e-10;
 
 CrackFrontDefinition::CrackFrontDefinition(const InputParameters & parameters)
   : GeneralUserObject(parameters),
-    BoundaryRestrictable(parameters, true), // false means nodesets
+    BoundaryRestrictable(this, true), // false means nodesets
     _aux(_fe_problem.getAuxiliarySystem()),
     _mesh(_subproblem.mesh()),
     _treat_as_2d(getParam<bool>("2d")),
@@ -98,10 +106,17 @@ CrackFrontDefinition::CrackFrontDefinition(const InputParameters & parameters)
                                         : std::numeric_limits<unsigned int>::max()),
     _t_stress(getParam<bool>("t_stress")),
     _q_function_rings(getParam<bool>("q_function_rings")),
-    _q_function_type(getParam<MooseEnum>("q_function_type"))
+    _q_function_type(getParam<MooseEnum>("q_function_type")),
+    _crack_front_points_provider(nullptr)
 {
   if (isParamValid("crack_front_points"))
   {
+    if (isParamValid("boundary"))
+      mooseError("CrackFrontDefinition error: since boundary is defined, crack_front_points should "
+                 "not be added.");
+    if (isParamValid("crack_front_points_provider"))
+      mooseError("As crack_front_points have been provided, the crack_front_points_provider will "
+                 "not be used and needs to be removed.");
     _crack_front_points = getParam<std::vector<Point>>("crack_front_points");
     _geom_definition_method = CRACK_FRONT_POINTS;
     if (_t_stress)
@@ -109,6 +124,24 @@ CrackFrontDefinition::CrackFrontDefinition(const InputParameters & parameters)
     if (_q_function_rings)
       mooseError("q_function_rings not supported with crack_front_points");
   }
+  else if (isParamValid("crack_front_points_provider"))
+  {
+    if (isParamValid("boundary"))
+      mooseError("CrackFrontDefinition error: since boundary is defined, "
+                 "crack_front_points_provider should not be added.");
+    if (!isParamValid("number_points_from_provider"))
+      mooseError("CrackFrontDefinition error: When crack_front_points_provider is used, the "
+                 "number_points_from_provider must be "
+                 "provided.");
+    _crack_front_points_provider = &getUserObjectByName<CrackFrontPointsProvider>(
+        getParam<UserObjectName>("crack_front_points_provider"));
+    _num_points_from_provider = getParam<unsigned int>("number_points_from_provider");
+    _geom_definition_method = CRACK_FRONT_POINTS;
+  }
+  else if (isParamValid("number_points_from_provider"))
+    mooseError("CrackFrontDefinition error: number_points_from_provider is provided but "
+               "crack_front_points_provider cannot "
+               "be found.");
   else if (isParamValid("boundary"))
   {
     _geom_definition_method = CRACK_FRONT_NODES;
@@ -117,7 +150,8 @@ CrackFrontDefinition::CrackFrontDefinition(const InputParameters & parameters)
                  "set by user!");
   }
   else
-    mooseError("In CrackFrontDefinition, must define either 'boundary' or 'crack_front_points'");
+    mooseError("In CrackFrontDefinition, must define one of 'boundary', 'crack_front_points' "
+               "and 'crack_front_points_provider'");
 
   if (isParamValid("crack_mouth_boundary"))
     _crack_mouth_boundary_names = getParam<std::vector<BoundaryName>>("crack_mouth_boundary");
@@ -211,6 +245,10 @@ CrackFrontDefinition::execute()
 void
 CrackFrontDefinition::initialSetup()
 {
+  if (_crack_front_points_provider != nullptr)
+    _crack_front_points =
+        _crack_front_points_provider->getCrackFrontPoints(_num_points_from_provider);
+
   _crack_mouth_boundary_ids = _mesh.getBoundaryIDs(_crack_mouth_boundary_names, true);
   _intersecting_boundary_ids = _mesh.getBoundaryIDs(_intersecting_boundary_names, true);
 
@@ -1085,6 +1123,14 @@ CrackFrontDefinition::rotateToCrackFrontCoords(const RealVectorValue vector,
   return _rot_matrix[point_index] * vector;
 }
 
+RealVectorValue
+CrackFrontDefinition::rotateFromCrackFrontCoordsToGlobal(const RealVectorValue vector,
+                                                         const unsigned int point_index) const
+{
+  RealVectorValue vec = _rot_matrix[point_index].transpose() * vector;
+  return vec;
+}
+
 RankTwoTensor
 CrackFrontDefinition::rotateToCrackFrontCoords(const RankTwoTensor tensor,
                                                const unsigned int point_index) const
@@ -1206,6 +1252,32 @@ CrackFrontDefinition::calculateRThetaToCrackFront(const Point qp,
     theta = 0;
   else
     mooseError("Invalid distance r in CrackFrontDefinition::calculateRThetaToCrackFront");
+}
+
+unsigned int
+CrackFrontDefinition::calculateRThetaToCrackFront(const Point qp, Real & r, Real & theta) const
+{
+  unsigned int num_points = getNumCrackFrontPoints();
+
+  // Loop over crack front points to find the one closest to the point qp
+  Real min_dist = std::numeric_limits<Real>::max();
+  unsigned int point_index = 0;
+  for (unsigned int pit = 0; pit != num_points; ++pit)
+  {
+    const Point * crack_front_point = getCrackFrontPoint(pit);
+    RealVectorValue crack_point_to_current_point = qp - *crack_front_point;
+    Real dist = crack_point_to_current_point.norm();
+
+    if (dist < min_dist)
+    {
+      min_dist = dist;
+      point_index = pit;
+    }
+  }
+
+  calculateRThetaToCrackFront(qp, point_index, r, theta);
+
+  return point_index;
 }
 
 bool

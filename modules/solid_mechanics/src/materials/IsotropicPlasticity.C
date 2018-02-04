@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "IsotropicPlasticity.h"
 
 #include "SymmIsotropicElasticityTensor.h"
@@ -15,6 +18,8 @@ InputParameters
 validParams<IsotropicPlasticity>()
 {
   InputParameters params = validParams<ReturnMappingModel>();
+  params.addClassDescription("Calculates the stress and plastic strain in the general isotropic "
+                             "linear strain hardening plasticity model");
 
   // Linear strain hardening parameters
   params.addParam<Real>("yield_stress", "The point at which plastic strain begins accumulating");

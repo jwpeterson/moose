@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "GrainTracker.h"
 
@@ -47,6 +49,9 @@ validParams<GrainTracker>()
 {
   InputParameters params = validParams<FeatureFloodCount>();
   params += validParams<GrainTrackerInterface>();
+
+  params.registerRelationshipManagers("GrainTrackerHaloRM");
+
   params.addClassDescription("Grain Tracker object for running reduced order parameter simulations "
                              "without grain coalescence.");
 
@@ -57,7 +62,7 @@ GrainTracker::GrainTracker(const InputParameters & parameters)
   : FeatureFloodCount(parameters),
     GrainTrackerInterface(),
     _tracking_step(getParam<int>("tracking_step")),
-    _halo_level(getParam<unsigned int>("halo_level")),
+    _halo_level(getParam<unsigned short>("halo_level")),
     _n_reserve_ops(getParam<unsigned short>("reserve_op")),
     _reserve_op_index(_n_reserve_ops <= _n_vars ? _n_vars - _n_reserve_ops : 0),
     _reserve_op_threshold(getParam<Real>("reserve_op_threshold")),
@@ -1304,7 +1309,6 @@ GrainTracker::updateFieldInfo()
     _feature_maps[map_num].clear();
 
   std::map<dof_id_type, Real> tmp_map;
-  MeshBase & mesh = _mesh.getMesh();
 
   for (const auto & grain : _feature_sets)
   {
@@ -1317,7 +1321,7 @@ GrainTracker::updateFieldInfo()
       Real entity_value = std::numeric_limits<Real>::lowest();
       if (_is_elemental)
       {
-        const Elem * elem = mesh.elem(entity);
+        const Elem * elem = _mesh.elemPtr(entity);
         std::vector<Point> centroid(1, elem->centroid());
         if (_poly_ic_uo && _first_time)
         {
@@ -1331,8 +1335,8 @@ GrainTracker::updateFieldInfo()
       }
       else
       {
-        Node & node = mesh.node(entity);
-        entity_value = _vars[curr_var]->getNodalValue(node);
+        auto node_ptr = _mesh.nodePtr(entity);
+        entity_value = _vars[curr_var]->getNodalValue(*node_ptr);
       }
 
       if (entity_value != std::numeric_limits<Real>::lowest() &&
@@ -1392,7 +1396,6 @@ GrainTracker::communicateHaloMap()
       std::vector<std::vector<std::pair<std::size_t, dof_id_type>>> root_halo_ids(_n_procs);
       counts.resize(_n_procs);
 
-      auto & mesh = _mesh.getMesh();
       // Loop over the _halo_ids "field" and build minimal lists for all of the other ranks
       for (auto var_index = beginIndex(_halo_ids); var_index < _halo_ids.size(); ++var_index)
       {
@@ -1400,12 +1403,13 @@ GrainTracker::communicateHaloMap()
         {
           DofObject * halo_entity;
           if (_is_elemental)
-            halo_entity = mesh.elem(entity_pair.first);
+            halo_entity = _mesh.queryElemPtr(entity_pair.first);
           else
-            halo_entity = &mesh.node(entity_pair.first);
+            halo_entity = _mesh.queryNodePtr(entity_pair.first);
 
-          root_halo_ids[halo_entity->processor_id()].push_back(
-              std::make_pair(var_index, entity_pair.first));
+          if (halo_entity)
+            root_halo_ids[halo_entity->processor_id()].push_back(
+                std::make_pair(var_index, entity_pair.first));
         }
       }
 

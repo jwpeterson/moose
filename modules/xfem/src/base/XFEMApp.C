@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "XFEMApp.h"
 #include "SolidMechanicsApp.h"
@@ -21,6 +23,9 @@
 #include "XFEMAction.h"
 #include "XFEMSingleVariableConstraint.h"
 #include "XFEMPressure.h"
+#include "CrackTipEnrichmentStressDivergenceTensors.h"
+#include "CrackTipEnrichmentCutOffBC.h"
+#include "ComputeCrackTipEnrichmentSmallStrain.h"
 
 #include "GeometricCutUserObject.h"
 #include "LineSegmentCutUserObject.h"
@@ -47,6 +52,9 @@ XFEMApp::XFEMApp(const InputParameters & parameters) : MooseApp(parameters)
   Moose::associateSyntax(_syntax, _action_factory);
   XFEMApp::associateSyntaxDepends(_syntax, _action_factory);
   XFEMApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  XFEMApp::registerExecFlags(_factory);
 }
 
 XFEMApp::~XFEMApp() {}
@@ -101,6 +109,15 @@ XFEMApp::registerObjects(Factory & factory)
 
   // DiracKernels
   registerDiracKernel(XFEMPressure);
+
+  // Kernels
+  registerKernel(CrackTipEnrichmentStressDivergenceTensors);
+
+  // Materials
+  registerMaterial(ComputeCrackTipEnrichmentSmallStrain);
+
+  // BC's
+  registerBoundaryCondition(CrackTipEnrichmentCutOffBC);
 }
 
 void
@@ -124,6 +141,20 @@ XFEMApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
   syntax.addDependency("setup_xfem", "setup_adaptivity");
   registerAction(XFEMAction, "add_aux_variable");
   registerAction(XFEMAction, "add_aux_kernel");
+  registerAction(XFEMAction, "add_variable");
+  registerAction(XFEMAction, "add_kernel");
+  registerAction(XFEMAction, "add_bc");
 
   registerSyntax("XFEMAction", "XFEM");
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+XFEMApp__registerExecFlags(Factory & factory)
+{
+  XFEMApp::registerExecFlags(factory);
+}
+void
+XFEMApp::registerExecFlags(Factory & /*factory*/)
+{
 }

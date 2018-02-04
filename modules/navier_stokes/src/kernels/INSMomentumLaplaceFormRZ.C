@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "INSMomentumLaplaceFormRZ.h"
 
 template <>
@@ -21,6 +24,29 @@ validParams<INSMomentumLaplaceFormRZ>()
 INSMomentumLaplaceFormRZ::INSMomentumLaplaceFormRZ(const InputParameters & parameters)
   : INSMomentumLaplaceForm(parameters)
 {
+}
+
+RealVectorValue
+INSMomentumLaplaceFormRZ::strongViscousTermLaplace()
+{
+  const Real & r = _q_point[_qp](0);
+  return INSBase::strongViscousTermLaplace() +
+         RealVectorValue(_mu[_qp] * (_u_vel[_qp] / (r * r) - _grad_u_vel[_qp](0) / r),
+                         -_mu[_qp] * _grad_v_vel[_qp](0) / r,
+                         0);
+}
+
+RealVectorValue
+INSMomentumLaplaceFormRZ::dStrongViscDUCompLaplace(unsigned comp)
+{
+  const Real & r = _q_point[_qp](0);
+  RealVectorValue add_jac(0, 0, 0);
+  if (comp == 0)
+    add_jac(0) = _mu[_qp] * (_phi[_j][_qp] / (r * r) - _grad_phi[_j][_qp](0) / r);
+  else if (comp == 1)
+    add_jac(1) = -_mu[_qp] * _grad_phi[_j][_qp](0) / r;
+
+  return INSBase::dStrongViscDUCompLaplace(comp) + add_jac;
 }
 
 Real

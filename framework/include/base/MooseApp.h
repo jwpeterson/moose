@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MOOSEAPP_H
 #define MOOSEAPP_H
@@ -41,6 +36,7 @@ class MeshModifier;
 class InputParameterWarehouse;
 class SystemInfo;
 class CommandLine;
+class RelationshipManager;
 
 template <>
 InputParameters validParams<MooseApp>();
@@ -61,10 +57,18 @@ public:
   virtual ~MooseApp();
 
   /**
-   * Get the name of the object
+   * Get the name of the object. In the case of MooseApp, the name of the object is *NOT* the name
+   * of the application. It's the name of the created application which is usually "main". If you
+   * have subapps, then each individual subapp will have a unique name which typically comes from
+   * the input file (e.g. sub0, sub1, etc...).
    * @return The name of the object
    */
-  const std::string & name() { return _name; }
+  const std::string & name() const { return _name; }
+
+  /**
+   * Get printable name of the application.
+   */
+  virtual std::string getPrintableName() const { return "Application"; }
 
   /**
    * Get the parameters of the object
@@ -73,7 +77,8 @@ public:
   InputParameters & parameters() { return _pars; }
 
   /**
-   * Get the type of this object as a string
+   * Get the type of this object as a string. This is a string version of the class name (e.g.
+   * MooseTestApp).
    * @return The the type of the object
    */
   const std::string & type() const { return _type; }
@@ -99,6 +104,21 @@ public:
   virtual void run();
 
   /**
+   * Returns the framework version.
+   */
+  std::string getFrameworkVersion() const;
+
+  /**
+   * Returns the current version of the framework or application (default: framework version).
+   */
+  virtual std::string getVersion() const;
+
+  /**
+   * Non-virtual method for printing out the version string in a consistent format.
+   */
+  std::string getPrintableVersion() const;
+
+  /**
    * Setup options based on InputParameters.
    */
   virtual void setupOptions();
@@ -117,7 +137,7 @@ public:
   /**
    * Returns the input file name that was set with setInputFileName
    */
-  std::string getInputFileName() { return _input_filename; }
+  std::string getInputFileName() const { return _input_filename; }
 
   /**
    * Override the selection of the output file base name.
@@ -144,13 +164,13 @@ public:
    * Whether or not an output position has been set.
    * @return True if it has
    */
-  bool hasOutputPosition() { return _output_position_set; }
+  bool hasOutputPosition() const { return _output_position_set; }
 
   /**
    * Get the output position.
    * @return The position offset for the output.
    */
-  Point getOutputPosition() { return _output_position; }
+  Point getOutputPosition() const { return _output_position; }
 
   /**
    * Set the starting time for the simulation.  This will override any choice
@@ -163,12 +183,12 @@ public:
   /**
    * @return Whether or not a start time has been programmatically set using setStartTime()
    */
-  bool hasStartTime() { return _start_time_set; }
+  bool hasStartTime() const { return _start_time_set; }
 
   /**
    * @return The start time
    */
-  Real getStartTime() { return _start_time; }
+  Real getStartTime() const { return _start_time; }
 
   /**
    * Each App has it's own local time.  The "global" time of the whole problem might be
@@ -180,7 +200,7 @@ public:
    * Each App has it's own local time.  The "global" time of the whole problem might be
    * different.  This offset is how far off the local App time is from the global time.
    */
-  Real getGlobalTimeOffset() { return _global_time_offset; }
+  Real getGlobalTimeOffset() const { return _global_time_offset; }
 
   /**
    * Return the filename that was parsed
@@ -206,7 +226,11 @@ public:
   /**
    * Retrieve the Executioner for this App
    */
-  Executioner * getExecutioner() { return _executioner.get(); }
+  Executioner * getExecutioner() const
+  {
+    mooseAssert(_executioner, "Executioner is nullptr");
+    return _executioner.get();
+  }
 
   /**
    * Retrieve the Executioner shared pointer for this App
@@ -238,7 +262,7 @@ public:
    * @return The reference to the command line object
    * Setup options based on InputParameters.
    */
-  std::shared_ptr<CommandLine> commandLine() { return _command_line; }
+  std::shared_ptr<CommandLine> commandLine() const { return _command_line; }
 
   /**
    * This method is here so we can determine whether or not we need to
@@ -464,6 +488,15 @@ public:
   const MeshModifier & getMeshModifier(const std::string & name) const;
 
   /**
+   * Get names of all mesh modifiers
+   * Note: This function should be called after all mesh modifiers are added with the
+   * 'add_mesh_modifier' task. The returned value will be undefined and depends on the ordering that
+   * mesh modifiers are added by MOOSE if the function is called during the 'add_mesh_modifier'
+   * task.
+   */
+  std::vector<std::string> getMeshModifierNames() const;
+
+  /**
    * Clear all mesh modifers
    */
   void clearMeshModifiers();
@@ -484,6 +517,30 @@ public:
 
   /// Returns whether the Application is running in check input mode
   bool checkInput() const { return _check_input; }
+
+  /**
+   * WARNING: This is an internal method for MOOSE, if you need the add new ExecFlagTypes then
+   * use the registerExecFlag macro as done in Moose.C/h.
+   *
+   * @param flag The flag to add as available to the app level ExecFlagEnum.
+   */
+  void addExecFlag(const ExecFlagType & flag);
+
+  bool hasRelationshipManager(const std::string & name) const;
+
+  void addRelationshipManager(std::shared_ptr<RelationshipManager> relationship_manager);
+
+  void attachRelationshipManagers(Moose::RelationshipManagerType rm_type);
+
+  /**
+   * Returns the Relationship managers info suitable for printing.
+   */
+  std::vector<std::pair<std::string, std::string>> getRelationshipManagerInfo();
+
+  /**
+   * Return the app level ExecFlagEnum, this contains all the available flags for the app.
+   */
+  const ExecFlagEnum & getExecuteOnEnum() const { return _execute_flags; }
 
 protected:
   /**
@@ -510,8 +567,9 @@ protected:
   /// Constructor is protected so that this object is constructed through the AppFactory object
   MooseApp(InputParameters parameters);
 
-  /// Don't run the simulation, just complete all of the mesh preperation steps and exit
-  virtual void meshOnly(std::string mesh_file_name);
+  /// TODO: remove this function after updating rattlesnake to not use it
+  /// Populate the _syntax object with mesh only tasks that will be executed before writing mesh.
+  virtual void modifyMeshOnlyTasks(Syntax &) {}
 
   /**
    * NOTE: This is an internal function meant for MOOSE use only!
@@ -595,7 +653,7 @@ protected:
   bool _use_eigen_value;
 
   /// System Information
-  std::shared_ptr<SystemInfo> _sys_info;
+  std::unique_ptr<SystemInfo> _sys_info;
 
   /// Indicates whether warnings, errors, or no output is displayed when unused parameters are detected
   enum UNUSED_CHECK
@@ -637,6 +695,8 @@ protected:
 
   /// true if we want to just check the input file
   bool _check_input;
+
+  std::vector<std::shared_ptr<RelationshipManager>> _relationship_managers;
 
   /// The library, registration method and the handle to the method
   std::map<std::pair<std::string, std::string>, void *> _lib_handles;
@@ -693,6 +753,9 @@ private:
 
   /// Cache for a Backup to use for restart / recovery
   std::shared_ptr<Backup> _cached_backup;
+
+  /// Execution flags for this App
+  ExecFlagEnum _execute_flags;
 
   // Allow FEProblemBase to set the recover/restart state, so make it a friend
   friend class FEProblemBase;

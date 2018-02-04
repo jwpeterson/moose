@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef BLOCKRESTRICTABLE_H
 #define BLOCKRESTRICTABLE_H
@@ -25,6 +20,7 @@
 class BlockRestrictable;
 class FEProblemBase;
 class MooseMesh;
+class MooseVariable;
 
 template <>
 InputParameters validParams<BlockRestrictable>();
@@ -69,7 +65,7 @@ public:
    * Populates the 'block' input parameters, see the general class documentation for details.
    * @param parameters The input parameters (see the detailed help for additional information)
    */
-  BlockRestrictable(const InputParameters & parameters);
+  BlockRestrictable(const MooseObject * moose_object);
 
   /**
    * Class constructor
@@ -78,7 +74,7 @@ public:
    * @param parameters The input parameters (see the detailed help for additional information)
    * @param boundary_ids The boundary ids that the object is restricted to
    */
-  BlockRestrictable(const InputParameters & parameters, const std::set<BoundaryID> & boundary_ids);
+  BlockRestrictable(const MooseObject * moose_object, const std::set<BoundaryID> & boundary_ids);
 
   /**
    * Destructor: does nothing but needs to be marked as virtual since
@@ -113,28 +109,28 @@ public:
    * @param name A SubdomainName to check
    * @return True if the given id is valid for this object
    */
-  bool hasBlocks(SubdomainName name) const;
+  bool hasBlocks(const SubdomainName & name) const;
 
   /**
    * Test if the supplied vector of block names are valid for this object
    * @param names A vector of SubdomainNames to check
    * @return True if the given ids are valid for this object
    */
-  bool hasBlocks(std::vector<SubdomainName> names) const;
+  bool hasBlocks(const std::vector<SubdomainName> & names) const;
 
   /**
    * Test if the supplied block ids are valid for this object
    * @param id A SubdomainID to check
    * @return True if the given id is valid for this object
    */
-  bool hasBlocks(SubdomainID id) const;
+  bool hasBlocks(const SubdomainID & id) const;
 
   /**
    * Test if the supplied vector block ids are valid for this object
    * @param ids A vector of SubdomainIDs ids to check
    * @return True if the all of the given ids are found within the ids for this object
    */
-  bool hasBlocks(std::vector<SubdomainID> ids) const;
+  bool hasBlocks(const std::vector<SubdomainID> & ids) const;
 
   /**
    * Test if the supplied set of block ids are valid for this object
@@ -142,7 +138,7 @@ public:
    * @return True if the all of the given ids are found within the ids for this object
    * \see isSubset
    */
-  bool hasBlocks(std::set<SubdomainID> ids) const;
+  bool hasBlocks(const std::set<SubdomainID> & ids) const;
 
   /**
    * Test if the class block ids are a subset of the supplied objects
@@ -151,7 +147,7 @@ public:
    * hasBlocks)
    * \see hasBlocks
    */
-  bool isBlockSubset(std::set<SubdomainID> ids) const;
+  bool isBlockSubset(const std::set<SubdomainID> & ids) const;
 
   /**
    * Test if the class block ids are a subset of the supplied objects
@@ -160,7 +156,7 @@ public:
    * hasBlocks)
    * \see hasBlocks
    */
-  bool isBlockSubset(std::vector<SubdomainID> ids) const;
+  bool isBlockSubset(const std::vector<SubdomainID> & ids) const;
 
   /**
    * Check if a material property is valid for all blocks of this object
@@ -189,6 +185,14 @@ public:
    */
   virtual bool blockRestricted() const;
 
+  /**
+   * Helper for checking that the ids for this object are in agreement with the variables
+   * on the supplied variable.
+   *
+   * @param variable The variable to check against.
+   */
+  void checkVariable(const MooseVariable & variable) const;
+
 protected:
   /// Pointer to the MaterialData class for this object
   std::shared_ptr<MaterialData> _blk_material_data;
@@ -203,7 +207,7 @@ protected:
   /**
    * An initialization routine needed for dual constructors
    */
-  void initializeBlockRestrictable(const InputParameters & parameters);
+  void initializeBlockRestrictable(const MooseObject * moose_object);
 
   /**
    * Check if the blocks this object operates on all have the same coordinate system,
@@ -212,13 +216,11 @@ protected:
   Moose::CoordinateSystemType getBlockCoordSystem();
 
 private:
-  /// Set of block ids supplied by the user via the input file
+  /// Set of block ids supplied by the user via the input file (for error reporting)
   std::set<SubdomainID> _blk_ids;
 
   /// Vector the block names supplied by the user via the input file
   std::vector<SubdomainName> _blocks;
-
-  bool _initialized;
 
   /// Flag for allowing dual restriction
   const bool _blk_dual_restrictable;
@@ -238,11 +240,8 @@ private:
   /// Thread id for this object
   THREAD_ID _blk_tid;
 
-  /**
-   * A helper function for extracting the subdomain IDs for a variable
-   * @param parameters A reference to the input parameters supplied to the object
-   */
-  std::set<SubdomainID> variableSubdomainIDs(const InputParameters & parameters) const;
+  /// Name of the object
+  const std::string & _blk_name;
 };
 
 template <typename T>

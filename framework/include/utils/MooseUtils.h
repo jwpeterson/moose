@@ -1,16 +1,12 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef MOOSEUTILS_H
 #define MOOSEUTILS_H
 
@@ -18,6 +14,7 @@
 #include "HashMap.h"
 #include "MaterialProperty.h" // MaterialProperties
 #include "InfixIterator.h"
+#include "MooseEnumItem.h"
 
 // C++ includes
 #include <string>
@@ -27,6 +24,9 @@
 #include <iterator>
 
 // Forward Declarations
+class InputParameters;
+class ExecFlagEnum;
+
 namespace libMesh
 {
 class Elem;
@@ -35,6 +35,7 @@ namespace Parallel
 class Communicator;
 }
 }
+class MultiMooseEnum;
 
 namespace MooseUtils
 {
@@ -84,7 +85,7 @@ bool checkFileWriteable(const std::string & filename, bool throw_on_unwritable =
  * This function implements a parallel barrier function but writes progress
  * to stdout.
  */
-void parallelBarrierNotify(const libMesh::Parallel::Communicator & comm);
+void parallelBarrierNotify(const libMesh::Parallel::Communicator & comm, bool messaging = true);
 
 /**
  * This function marks the begin of a section of code that is executed in serial
@@ -324,11 +325,13 @@ std::string & removeColor(std::string & msg);
 std::list<std::string> getFilesInDirs(const std::list<std::string> & directory_list);
 
 /**
- * Returns the most recent checkpoint file given a list of files.
+ * Returns the most recent checkpoint or mesh file given a list of files.
  * If a suitable file isn't found the empty string is returned
  * @param checkpoint_files the list of files to analyze
  */
-std::string getRecoveryFileBase(const std::list<std::string> & checkpoint_files);
+std::string getLatestMeshCheckpointFile(const std::list<std::string> & checkpoint_files);
+
+std::string getLatestAppCheckpointFileBase(const std::list<std::string> & checkpoint_files);
 
 /*
  * Checks to see if a string matches a search string
@@ -444,6 +447,19 @@ numDigits(const T & num)
 {
   return num > 9 ? static_cast<int>(std::log10(static_cast<double>(num))) + 1 : 1;
 }
-}
+
+/**
+ * Return the default ExecFlagEnum for MOOSE.
+ */
+ExecFlagEnum getDefaultExecFlagEnum();
+
+/**
+ * Robust string to integer conversion that fails for cases such at "1foo".
+ * @param input The string to convert.
+ * @param throw_on_failure Throw an invalid_argument exception instead of mooseError.
+ */
+int stringToInteger(const std::string & input, bool throw_on_failure = false);
+
+} // MooseUtils namespace
 
 #endif // MOOSEUTILS_H

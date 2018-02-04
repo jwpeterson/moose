@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "PorousFlowPorosityExponentialBase.h"
 
@@ -38,40 +40,22 @@ PorousFlowPorosityExponentialBase::PorousFlowPorosityExponentialBase(
 {
 }
 
-Real
-PorousFlowPorosityExponentialBase::atNegInfinityQp() const
-{
-  return 1.0;
-}
-
-Real
-PorousFlowPorosityExponentialBase::atZeroQp() const
-{
-  return 1.0;
-}
-
-Real
-PorousFlowPorosityExponentialBase::decayQp() const
-{
-  return 0.0;
-}
-
-Real
-PorousFlowPorosityExponentialBase::ddecayQp_dvar(unsigned /*pvar*/) const
-{
-  return 0.0;
-}
-
-RealGradient
-PorousFlowPorosityExponentialBase::ddecayQp_dgradvar(unsigned /*pvar*/) const
-{
-  return RealGradient();
-}
-
 void
 PorousFlowPorosityExponentialBase::initQpStatefulProperties()
 {
-  _porosity[_qp] = atZeroQp();
+  const Real a = atNegInfinityQp();
+  const Real b = atZeroQp();
+  mooseAssert(a > b, "PorousFlowPorosityExponentialBase a must be larger than b");
+  const Real decay = decayQp();
+
+  if (decay <= 0.0 || !_ensure_positive)
+    _porosity[_qp] = a + (b - a) * std::exp(decay);
+  else
+  {
+    const Real c = std::log(a / (a - b));
+    const Real expx = std::exp(-decay / c);
+    _porosity[_qp] = a + (b - a) * std::exp(c * (1.0 - expx));
+  }
 }
 
 void
@@ -79,7 +63,6 @@ PorousFlowPorosityExponentialBase::computeQpProperties()
 {
   const Real a = atNegInfinityQp();
   const Real b = atZeroQp();
-  mooseAssert(a > b, "PorousFlowPorosityExponentialBase a must be larger than b");
   const Real decay = decayQp();
 
   Real deriv = 0.0; // = d(porosity)/d(decay)

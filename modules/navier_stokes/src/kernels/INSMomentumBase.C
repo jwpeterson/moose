@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "INSMomentumBase.h"
 #include "Function.h"
 
@@ -48,7 +51,7 @@ INSMomentumBase::computeQpResidual()
     r += _test[_i][_qp] * strongPressureTerm()(_component);
 
   // body force term
-  r += _test[_i][_qp] * bodyForcesTerm()(_component);
+  r += _test[_i][_qp] * (gravityTerm()(_component) - _ffn.value(_t, _q_point[_qp]));
 
   // convective term
   if (_convective_term)
@@ -73,7 +76,7 @@ INSMomentumBase::computeQpPGResidual()
 
   return tau() * U * _grad_test[_i][_qp] *
          ((convective_term + viscous_term + transient_term + strongPressureTerm() +
-           bodyForcesTerm())(_component)-_ffn.value(_t, _q_point[_qp]));
+           gravityTerm())(_component)-_ffn.value(_t, _q_point[_qp]));
 
   // For GLS as opposed to SUPG stabilization, one would need to modify the test function functional
   // space to include second derivatives of the Galerkin test functions corresponding to the viscous
@@ -83,7 +86,7 @@ INSMomentumBase::computeQpPGResidual()
 
   // Real pg_viscous_r = -_mu[_qp] * lap_test * tau() *
   //                     (convective_term + viscous_term + strongPressureTerm()(_component) +
-  //                      bodyForcesTerm())(_component);
+  //                      gravityTerm())(_component);
 }
 
 Real
@@ -122,10 +125,10 @@ INSMomentumBase::computeQpPGJacobian(unsigned comp)
 
   return dTauDUComp(comp) * U * _grad_test[_i][_qp] *
              (convective_term + viscous_term + strongPressureTerm()(_component) +
-              bodyForcesTerm()(_component) + transient_term - _ffn.value(_t, _q_point[_qp])) +
+              gravityTerm()(_component) + transient_term - _ffn.value(_t, _q_point[_qp])) +
          tau() * d_U_d_U_comp * _grad_test[_i][_qp] *
              (convective_term + viscous_term + strongPressureTerm()(_component) +
-              bodyForcesTerm()(_component) + transient_term - _ffn.value(_t, _q_point[_qp])) +
+              gravityTerm()(_component) + transient_term - _ffn.value(_t, _q_point[_qp])) +
          tau() * U * _grad_test[_i][_qp] *
              (d_convective_term_d_u_comp + d_viscous_term_d_u_comp + d_transient_term_d_u_comp);
 }

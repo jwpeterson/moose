@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "IdealGasFluidPropertiesPTTest.h"
 
@@ -40,10 +35,12 @@ TEST_F(IdealGasFluidPropertiesPTTest, properties)
   REL_TEST("cv", _fp->cv(p, T), cv, tol);
   REL_TEST("c", _fp->c(p, T), std::sqrt(cp * R * T / (cv * molar_mass)), tol);
   REL_TEST("k", _fp->k(p, T), thermal_conductivity, tol);
+  REL_TEST("k", _fp->k_from_rho_T(_fp->rho(p, T), T), thermal_conductivity, tol);
   REL_TEST("s", _fp->s(p, T), entropy, tol);
   REL_TEST("rho", _fp->rho(p, T), p * molar_mass / (R * T), tol);
   REL_TEST("e", _fp->e(p, T), cv * T, tol);
   REL_TEST("mu", _fp->mu(p, T), viscosity, tol);
+  REL_TEST("mu", _fp->mu_from_rho_T(_fp->rho(p, T), T), viscosity, tol);
   REL_TEST("h", _fp->h(p, T), cp * T, tol);
   ABS_TEST("henry", _fp->henryConstant(T), henry, tol);
 }
@@ -82,4 +79,11 @@ TEST_F(IdealGasFluidPropertiesPTTest, derivatives)
   ABS_TEST("dh_dp", dh_dp, 0.0, tol);
   fd = (_fp->h(p, T + dT) - _fp->h(p, T - dT)) / (2.0 * dT);
   REL_TEST("dh_dT", dh_dT, fd, tol);
+
+  Real mu, dmu_dp, dmu_dT;
+  _fp->mu_dpT(p, T, mu, dmu_dp, dmu_dT);
+  fd = (_fp->mu(p + dp, T) - _fp->mu(p - dp, T)) / (2.0 * dp);
+  ABS_TEST("dmu_dp", dmu_dp, fd, tol);
+  fd = (_fp->mu(p, T + dT) - _fp->mu(p, T - dT)) / (2.0 * dT);
+  ABS_TEST("dh_dT", dmu_dT, fd, tol);
 }

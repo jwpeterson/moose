@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "DiscreteNucleationMap.h"
 #include "MooseMesh.h"
@@ -23,11 +25,9 @@ validParams<DiscreteNucleationMap>()
   params.addRequiredParam<UserObjectName>("inserter", "DiscreteNucleationInserter user object");
   params.addCoupledVar("periodic",
                        "Use the periodicity settings of this variable to populate the grain map");
-  MultiMooseEnum setup_options(SetupInterface::getExecuteOptions());
   // the mapping needs to run at timestep begin, which is after the adaptivity
   // run of the previous timestep.
-  setup_options = "timestep_begin";
-  params.set<MultiMooseEnum>("execute_on") = setup_options;
+  params.set<ExecFlagEnum>("execute_on") = EXEC_TIMESTEP_BEGIN;
   return params;
 }
 

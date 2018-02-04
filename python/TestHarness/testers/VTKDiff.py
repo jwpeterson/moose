@@ -1,3 +1,12 @@
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 from RunApp import RunApp
 from TestHarness import util
 import os
@@ -62,7 +71,8 @@ class VTKDiff(RunApp):
                     output += differ.message() + '\n'
 
                     if differ.fail():
-                        self.setStatus('VTKDIFF', self.bucket_skip)
+                        self.addCaveats('VTKDIFF')
+                        self.setStatus(self.bucket_skip.status, self.bucket_skip)
                         break
 
         # If status is still pending, then it is a passing test

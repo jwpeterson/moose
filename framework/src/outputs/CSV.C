@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // Moose includes
 #include "CSV.h"
@@ -31,9 +26,7 @@ validParams<CSV>()
       "align",
       false,
       "Align the outputted csv data by padding the numbers with trailing whitespace");
-  params.addParam<std::string>(
-      "delimiter", "Assign the delimiter (default is ','"); // default not included because peacock
-                                                            // didn't parse ','
+  params.addParam<std::string>("delimiter", ",", "Assign the delimiter (default is ','");
   params.addParam<unsigned int>("precision", 14, "Set the output precision");
 
   // Suppress unused parameters
@@ -47,11 +40,11 @@ CSV::CSV(const InputParameters & parameters)
   : TableOutput(parameters),
     _align(getParam<bool>("align")),
     _precision(getParam<unsigned int>("precision")),
-    _set_delimiter(isParamValid("delimiter")),
-    _delimiter(_set_delimiter ? getParam<std::string>("delimiter") : ""),
+    _delimiter(getParam<std::string>("delimiter")),
     _write_all_table(false),
     _write_vector_table(false),
-    _sort_columns(getParam<bool>("sort_columns"))
+    _sort_columns(getParam<bool>("sort_columns")),
+    _recovering(_app.isRecovering())
 {
 }
 
@@ -62,11 +55,13 @@ CSV::initialSetup()
   TableOutput::initialSetup();
 
   // Set the delimiter
-  if (_set_delimiter)
-    _all_data_table.setDelimiter(_delimiter);
+  _all_data_table.setDelimiter(_delimiter);
 
   // Set the precision
   _all_data_table.setPrecision(_precision);
+
+  if (_recovering)
+    _all_data_table.append(true);
 }
 
 std::string
@@ -123,8 +118,7 @@ CSV::output(const ExecFlagType & type)
       output << "_" << std::setw(_padding) << std::setprecision(0) << std::setfill('0')
              << std::right << timeStep() << ".csv";
 
-      if (_set_delimiter)
-        it.second.setDelimiter(_delimiter);
+      it.second.setDelimiter(_delimiter);
       it.second.setPrecision(_precision);
       if (_sort_columns)
         it.second.sortColumns();

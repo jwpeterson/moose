@@ -1,14 +1,22 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef RETURNMAPPINGMODEL_H
 #define RETURNMAPPINGMODEL_H
 
 #include "ConstitutiveModel.h"
 #include "SingleVariableReturnMappingSolution.h"
+
+class ReturnMappingModel;
+
+template <>
+InputParameters validParams<ReturnMappingModel>();
 
 /**
  * Base class for models that perform return mapping iterations to compute stress.  This
@@ -16,7 +24,6 @@
  * as a standalone model for a single source of inelasticity.  It can also be called from
  * another model that combines together multiple inelastic models using Picard iterations.
  */
-
 class ReturnMappingModel : public ConstitutiveModel, public SingleVariableReturnMappingSolution
 {
 public:
@@ -83,9 +90,8 @@ protected:
   MaterialProperty<Real> & _effective_inelastic_strain;
   const MaterialProperty<Real> & _effective_inelastic_strain_old;
   Real _max_inelastic_increment;
+  const bool _compute_matl_timestep_limit;
+  MaterialProperty<Real> * _matl_timestep_limit;
 };
-
-template <>
-InputParameters validParams<ReturnMappingModel>();
 
 #endif // RETURNMAPPINGMODEL_H

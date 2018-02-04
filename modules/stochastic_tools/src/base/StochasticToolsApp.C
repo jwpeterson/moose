@@ -1,3 +1,11 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 #include "StochasticToolsApp.h"
 #include "Moose.h"
 #include "AppFactory.h"
@@ -45,6 +53,9 @@ StochasticToolsApp::StochasticToolsApp(InputParameters parameters) : MooseApp(pa
 
   Moose::associateSyntax(_syntax, _action_factory);
   StochasticToolsApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  StochasticToolsApp::registerExecFlags(_factory);
 }
 
 StochasticToolsApp::~StochasticToolsApp() {}
@@ -106,5 +117,16 @@ StochasticToolsApp__associateSyntax(Syntax & syntax, ActionFactory & action_fact
 }
 void
 StochasticToolsApp::associateSyntax(Syntax & /*syntax*/, ActionFactory & /*action_factory*/)
+{
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+StochasticToolsApp__registerExecFlags(Factory & factory)
+{
+  StochasticToolsApp::registerExecFlags(factory);
+}
+void
+StochasticToolsApp::registerExecFlags(Factory & /*factory*/)
 {
 }

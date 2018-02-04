@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "gtest/gtest.h"
 
@@ -104,4 +99,35 @@ TEST(MooseUtils, numDigits)
   EXPECT_EQ(MooseUtils::numDigits(134123454), 9);
   EXPECT_EQ(MooseUtils::numDigits(1513253268), 10);
   EXPECT_EQ(MooseUtils::numDigits(69506060606), 11);
+}
+
+TEST(MooseUtils, stringToInteger)
+{
+  EXPECT_EQ(MooseUtils::stringToInteger("42"), 42);
+  EXPECT_EQ(MooseUtils::stringToInteger("-42"), -42);
+  EXPECT_THROW(MooseUtils::stringToInteger("", true), std::invalid_argument);
+  EXPECT_THROW(MooseUtils::stringToInteger("42 ", true), std::invalid_argument);
+  EXPECT_THROW(MooseUtils::stringToInteger("42foo", true), std::invalid_argument);
+  EXPECT_THROW(MooseUtils::stringToInteger("42.1", true), std::invalid_argument);
+}
+
+struct TestCase
+{
+  std::string a;
+  std::string b;
+  int dist;
+};
+
+TEST(MooseUtilsTests, levenshteinDist)
+{
+  TestCase cases[] = {
+      {"hello", "hell", 1}, {"flood", "foods", 2}, {"fandango", "odanget", 5},
+  };
+
+  for (size_t i = 0; i < sizeof(cases) / sizeof(TestCase); i++)
+  {
+    auto test = cases[i];
+    int got = MooseUtils::levenshteinDist(test.a, test.b);
+    EXPECT_EQ(test.dist, got) << "case " << i + 1 << " FAILED: a=" << test.a << ", b=" << test.b;
+  }
 }

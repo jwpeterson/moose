@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "RichardsApp.h"
 #include "Moose.h"
@@ -118,6 +120,9 @@ RichardsApp::RichardsApp(const InputParameters & parameters) : MooseApp(paramete
 
   Moose::associateSyntax(_syntax, _action_factory);
   RichardsApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  RichardsApp::registerExecFlags(_factory);
 
   mooseDeprecated("Please use the PorousFlow module instead.  If Richards contains functionality "
                   "not included in PorousFlow, please contact the moose-users google group");
@@ -237,4 +242,15 @@ RichardsApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory)
   registerAction(Q2PAction, "add_aux_variable");
   registerAction(Q2PAction, "add_function");
   registerAction(Q2PAction, "add_postprocessor");
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+RichardsApp__registerExecFlags(Factory & factory)
+{
+  RichardsApp::registerExecFlags(factory);
+}
+void
+RichardsApp::registerExecFlags(Factory & /*factory*/)
+{
 }

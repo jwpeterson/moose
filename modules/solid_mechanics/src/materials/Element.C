@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "Element.h"
 #include "Nonlinear3D.h"
 #include "SolidModel.h"
@@ -14,7 +17,7 @@ namespace SolidMechanics
 Element::Element(SolidModel & solid_model,
                  const std::string & /*name*/,
                  const InputParameters & parameters)
-  : Coupleable(&solid_model, false), ZeroInterface(parameters), _solid_model(solid_model)
+  : Coupleable(&solid_model, false), _solid_model(solid_model)
 {
 }
 

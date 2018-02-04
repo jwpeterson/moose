@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "GeneralizedPlaneStrainAction.h"
 
 #include "Conversion.h"
@@ -103,7 +106,7 @@ GeneralizedPlaneStrainAction::act()
     InputParameters params = _factory.getValidParams(uo_type);
 
     params.applyParameters(parameters());
-    params.set<MultiMooseEnum>("execute_on") = "linear";
+    params.set<ExecFlagEnum>("execute_on") = EXEC_LINEAR;
 
     _problem->addUserObject(uo_type, uo_name, params);
   }

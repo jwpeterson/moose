@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "GeneralizedPlaneStrainUserObject.h"
 #include "RankTwoTensor.h"
 #include "RankFourTensor.h"
@@ -27,7 +30,7 @@ validParams<GeneralizedPlaneStrainUserObject>()
       "Function used to prescribe pressure in the out-of-plane direction");
   params.addParam<Real>("factor", 1.0, "Scale factor applied to prescribed pressure");
   params.addParam<std::string>("base_name", "Material properties base name");
-  params.set<MultiMooseEnum>("execute_on") = "linear";
+  params.set<ExecFlagEnum>("execute_on") = EXEC_LINEAR;
 
   return params;
 }

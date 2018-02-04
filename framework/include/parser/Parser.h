@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef PARSER_H
 #define PARSER_H
@@ -130,12 +125,6 @@ public:
 
   virtual ~Parser();
 
-  /// Retrieve the Syntax associated with the passed Action and task
-  std::string getSyntaxByAction(const std::string & action, const std::string & task)
-  {
-    return _syntax.getSyntaxByAction(action, task);
-  }
-
   /**
    * Return the filename that was parsed
    */
@@ -203,6 +192,29 @@ protected:
                           bool in_global,
                           GlobalParamsAction * global_block);
 
+  /**
+   * Sets an input parameter representing a file path using input file data.  The file path is
+   * modified to be relative to the directory this application's input file is in.
+   */
+  template <typename T>
+  void setFilePathParam(const std::string & full_name,
+                        const std::string & short_name,
+                        InputParameters::Parameter<T> * param,
+                        InputParameters & params,
+                        bool in_global,
+                        GlobalParamsAction * global_block);
+
+  /**
+   * Sets an input parameter representing a vector of file paths using input file data.  The file
+   * paths are modified to be relative to the directory this application's input file is in.
+   */
+  template <typename T>
+  void setVectorFilePathParam(const std::string & full_name,
+                              const std::string & short_name,
+                              InputParameters::Parameter<std::vector<T>> * param,
+                              InputParameters & params,
+                              bool in_global,
+                              GlobalParamsAction * global_block);
   /**
    * Template method for setting any double indexed type parameter read from the input file or
    * command line.

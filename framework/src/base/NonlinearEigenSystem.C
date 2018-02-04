@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "NonlinearEigenSystem.h"
 
@@ -63,6 +58,9 @@ assemble_matrix(EquationSystems & es, const std::string & system_name)
     PetscObjectCompose((PetscObject)petsc_mat_A, "formFunctionCtx", nullptr);
     PetscObjectCompose((PetscObject)petsc_mat_A, "formFunctionCtx", (PetscObject)container);
     PetscContainerDestroy(&container);
+
+    // Let libmesh do not close matrices before solve
+    eigen_system.eigen_solver->set_close_matrix_before_solve(false);
   }
   if (eigen_system.generalized())
   {
@@ -119,6 +117,12 @@ NonlinearEigenSystem::solve()
   // Initialize the solution vector using a predictor and known values from nodal bcs
   setInitialSolution();
 
+// In DEBUG mode, Libmesh will check the residual automatically. This may cause
+// an error because B does not need to assembly by default.
+#ifdef DEBUG
+  if (_eigen_problem.isGeneralizedEigenvalueProblem())
+    sys().matrix_B->close();
+#endif
   // Solve the transient problem if we have a time integrator; the
   // steady problem if not.
   if (_time_integrator)

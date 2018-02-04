@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "Factory.h"
 #include "InfixIterator.h"
@@ -111,14 +106,19 @@ Factory::reportUnregisteredError(const std::string & obj_name) const
   std::ostringstream oss;
   std::set<std::string> paths = _app.getLoadedLibraryPaths();
 
-  oss << "A '" + obj_name + "' is not a registered object.\n"
-      << "\nWe loaded objects from the following libraries and still couldn't find your "
-         "object:\n\t";
-  std::copy(paths.begin(), paths.end(), infix_ostream_iterator<std::string>(oss, "\n\t"));
-  if (paths.empty())
-    oss << "(NONE)\n";
-  oss << "\n\nMake sure you have compiled the library and either set the \"library_path\" variable "
-      << "in your input file or exported \"MOOSE_LIBRARY_PATH\".";
+  oss << "A '" + obj_name + "' is not a registered object.\n";
+
+  if (!paths.empty())
+  {
+    oss << "\nWe loaded objects from the following libraries and still couldn't find your "
+           "object:\n\t";
+    std::copy(paths.begin(), paths.end(), infix_ostream_iterator<std::string>(oss, "\n\t"));
+    oss << '\n';
+  }
+
+  oss << "\nIf you are trying to find this object in a dynamically linked library, make sure that\n"
+         "the library can be found either in your \"Problem/library_path\" parameter or in the\n"
+         "MOOSE_LIBRARY_PATH environment variable.";
 
   mooseError(oss.str());
 }
@@ -165,4 +165,10 @@ Factory::deprecateObject(const std::string & name, const std::string & replaceme
 {
   deprecateObject(name);
   _deprecated_with_replace[name] = replacement;
+}
+
+void
+Factory::regExecFlag(const ExecFlagType & flag)
+{
+  _app.addExecFlag(flag);
 }

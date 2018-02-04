@@ -1,15 +1,23 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef COMPUTEMULTIPLEINELASTICSTRESS_H
 #define COMPUTEMULTIPLEINELASTICSTRESS_H
 
 #include "ComputeFiniteStrainElasticStress.h"
 
 class StressUpdateBase;
+
+class ComputeMultipleInelasticStress;
+
+template <>
+InputParameters validParams<ComputeMultipleInelasticStress>();
 
 /**
  * ComputeMultipleInelasticStress computes the stress, the consistent tangent
@@ -158,9 +166,6 @@ protected:
 
   /// is the elasticity tensor guaranteed to be isotropic?
   bool _is_elasticity_tensor_guaranteed_isotropic;
-
-  // /// flag for if the elasticity tensor does NOT change value over time
-  // bool _is_elasticity_tensor_guaranteed_constant_in_time;
 };
 
 #endif // COMPUTEMULTIPLEINELASTICSTRESS_H

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef NEARESTNODELOCATOR_H
 #define NEARESTNODELOCATOR_H
@@ -69,6 +64,18 @@ public:
   NodeIdRange & slaveNodeRange() { return *_slave_node_range; }
 
   /**
+   * Reconstructs the KDtree, updates the patch for the nodes in slave_nodes,
+   * and updates the closest neighbor for these nodes in nearest node info.
+   */
+  void updatePatch(std::vector<dof_id_type> & slave_nodes);
+
+  /**
+   * Updates the ghosted elements at the start of the time step for iterion
+   * patch update strategy.
+   */
+  void updateGhostedElems();
+
+  /**
    * Data structure used to hold nearest node info.
    */
   class NearestNodeInfo
@@ -101,8 +108,14 @@ public:
   // The following parameter controls the patch size that is searched for each nearest neighbor
   static const unsigned int _patch_size;
 
+  // Contact patch update strategy
+  const Moose::PatchUpdateType _patch_update_strategy;
+
   // The furthest through the patch that had to be searched for any node last time
   Real _max_patch_percentage;
+
+  // The list of ghosted elements added during a time step for iteration patch update strategy
+  std::vector<dof_id_type> _new_ghosted_elems;
 };
 
 #endif // NEARESTNODELOCATOR_H

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "AddOutputAction.h"
@@ -51,8 +46,7 @@ AddOutputAction::act()
     mooseError("The name '", _name, "' is a reserved name for output objects");
 
   // Check that an object by the same name does not already exist; this must be done before the
-  // object
-  // is created to avoid getting misleading errors from the Parser
+  // object is created to avoid getting misleading errors from the Parser
   if (output_warehouse.hasOutput(_name))
     mooseError("An output object named '", _name, "' already exists");
 
@@ -67,7 +61,7 @@ AddOutputAction::act()
 
     // --show-input should enable the display of the input file on the screen
     if (_app.getParam<bool>("show_input") && _moose_object_pars.get<bool>("output_screen"))
-      _moose_object_pars.set<MultiMooseEnum>("execute_input_on") = "initial";
+      _moose_object_pars.set<ExecFlagEnum>("execute_input_on") = EXEC_INITIAL;
   }
 
   // Apply the common parameters

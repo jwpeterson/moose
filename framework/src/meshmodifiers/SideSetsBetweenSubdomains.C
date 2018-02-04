@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SideSetsBetweenSubdomains.h"
 #include "InputParameters.h"
@@ -64,12 +59,8 @@ SideSetsBetweenSubdomains::modify()
   typedef std::vector<std::pair<dof_id_type, unsigned int>> vec_type;
   std::vector<vec_type> queries(my_n_proc);
 
-  MeshBase::const_element_iterator el = mesh.active_elements_begin();
-  const MeshBase::const_element_iterator end_el = mesh.active_elements_end();
-
-  for (; el != end_el; ++el)
+  for (const auto & elem : mesh.active_element_ptr_range())
   {
-    const Elem * elem = *el;
     SubdomainID curr_subdomain = elem->subdomain_id();
 
     // We only need to loop over elements in the master subdomain

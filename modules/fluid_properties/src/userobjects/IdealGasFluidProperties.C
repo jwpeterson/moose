@@ -1,11 +1,14 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "IdealGasFluidProperties.h"
+#include "Conversion.h"
 
 template <>
 InputParameters
@@ -39,7 +42,8 @@ Real
 IdealGasFluidProperties::pressure(Real v, Real u) const
 {
   if (v == 0.0)
-    mooseError(name(), ": Invalid value of specific volume detected (v = ", v, ").");
+    throw MooseException(name() + ": Invalid value of specific volume detected (v = " +
+                         Moose::stringify(v) + ").");
 
   // The std::max function serves as a hard limiter, which will guarantee non-negative pressure
   // when resolving strongly nonlinear waves
@@ -71,10 +75,22 @@ Real IdealGasFluidProperties::mu(Real, Real) const { return _mu; }
 
 Real IdealGasFluidProperties::k(Real, Real) const { return _k; }
 
-Real IdealGasFluidProperties::s(Real, Real) const
+Real IdealGasFluidProperties::s(Real, Real) const { mooseError(name(), ": s() not implemented."); }
+
+void
+IdealGasFluidProperties::s_from_h_p(Real h, Real p, Real & s, Real & ds_dh, Real & ds_dp) const
 {
-  mooseError(name(), ": s() not implemented.");
-  return 0.0;
+  const Real aux = p * std::pow(h / (_gamma * _cv), -_gamma / (_gamma - 1));
+  if (aux <= 0.0)
+    throw MooseException(name() + ": Non-positive argument in the ln() function.");
+
+  const Real daux_dh = p * std::pow(h / (_gamma * _cv), -_gamma / (_gamma - 1) - 1) *
+                       (-_gamma / (_gamma - 1)) / (_gamma * _cv);
+  const Real daux_dp = std::pow(h / (_gamma * _cv), -_gamma / (_gamma - 1));
+
+  s = -(_gamma - 1) * _cv * std::log(aux);
+  ds_dh = -(_gamma - 1) * _cv / aux * daux_dh;
+  ds_dp = -(_gamma - 1) * _cv / aux * daux_dp;
 }
 
 void
@@ -112,12 +128,9 @@ Real
 IdealGasFluidProperties::rho(Real pressure, Real temperature) const
 {
   if ((_gamma - 1.0) * pressure == 0.0)
-    mooseError(name(),
-               ": Invalid gamma or pressure detected in rho(pressure = ",
-               pressure,
-               ", gamma = ",
-               _gamma,
-               ")");
+    throw MooseException(name() + ": Invalid gamma or pressure detected in rho(pressure = " +
+                         Moose::stringify(pressure) + ", gamma = " + Moose::stringify(_gamma) +
+                         ")");
 
   return pressure / (_gamma - 1.0) / _cv / temperature;
 }
@@ -176,19 +189,16 @@ IdealGasFluidProperties::h_dpT(
 Real IdealGasFluidProperties::p_from_h_s(Real /*h*/, Real /*s*/) const
 {
   mooseError(name(), ": p_from_h_s() not implemented.");
-  return 0.0;
 }
 
 Real IdealGasFluidProperties::dpdh_from_h_s(Real /*h*/, Real /*s*/) const
 {
   mooseError(name(), ": dpdh_from_h_s() not implemented.");
-  return 0.0;
 }
 
 Real IdealGasFluidProperties::dpds_from_h_s(Real /*h*/, Real /*s*/) const
 {
   mooseError(name(), ": dpds_from_h_s() not implemented.");
-  return 0;
 }
 
 Real

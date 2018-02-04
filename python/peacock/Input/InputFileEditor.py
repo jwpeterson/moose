@@ -1,4 +1,13 @@
 #!/usr/bin/env python
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 from PyQt5.QtWidgets import QWidget, QSizePolicy
 from PyQt5.QtCore import Qt, pyqtSignal
 from BlockTree import BlockTree
@@ -112,10 +121,12 @@ class InputFileEditor(QWidget, MooseWidget):
         """
         if app_info.valid():
             self._closeBlockEditor()
-            input_filename = self.tree.input_filename
-            input_tree = InputTree(app_info)
-            self.tree = input_tree
-            self.tree.setInputFile(input_filename)
+            old_tree = self.tree
+            self.tree = InputTree(app_info)
+            if old_tree.root:
+                self.tree.setInputFileData(old_tree.getInputFileString(), old_tree.input_filename)
+            else:
+                self.tree.setInputFile(old_tree.input_filename)
             self.block_tree.setInputTree(self.tree)
 
     def setInputFile(self, input_file):
@@ -158,14 +169,14 @@ class InputFileEditor(QWidget, MooseWidget):
         Input:
             filename: Where to write the file.
         """
-        if not self.tree.app_info.valid():
+        if not self.tree.app_info.valid() or not filename:
             return
         content = self.tree.getInputFileString()
         try:
-          with open(filename, "w") as f:
-              f.write(content)
+            with open(filename, "w") as f:
+                f.write(content)
         except IOError as e:
-          mooseutils.mooseWarning("Failed to write input file %s: %s" % (filename, e))
+            mooseutils.mooseWarning("Failed to write input file %s: %s" % (filename, e))
 
 if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication, QMainWindow

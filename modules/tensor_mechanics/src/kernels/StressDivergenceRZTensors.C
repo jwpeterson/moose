@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "StressDivergenceRZTensors.h"
 #include "Assembly.h"
@@ -85,7 +87,28 @@ StressDivergenceRZTensors::computeQpOffDiagJacobian(unsigned int jvar)
   }
 
   if (_temp_coupled && jvar == _temp_var)
-    return 0.0;
+  {
+    Real jac = 0.0;
+    if (_component == 0)
+    {
+      for (unsigned k = 0; k < LIBMESH_DIM; ++k)
+        for (unsigned l = 0; l < LIBMESH_DIM; ++l)
+          jac -= (_grad_test[_i][_qp](0) * _Jacobian_mult[_qp](0, 0, k, l) +
+                  _test[_i][_qp] / _q_point[_qp](0) * _Jacobian_mult[_qp](2, 2, k, l) +
+                  _grad_test[_i][_qp](1) * _Jacobian_mult[_qp](0, 1, k, l)) *
+                 (*_deigenstrain_dT)[_qp](k, l);
+      return jac * _phi[_j][_qp];
+    }
+    else if (_component == 1)
+    {
+      for (unsigned k = 0; k < LIBMESH_DIM; ++k)
+        for (unsigned l = 0; l < LIBMESH_DIM; ++l)
+          jac -= (_grad_test[_i][_qp](1) * _Jacobian_mult[_qp](1, 1, k, l) +
+                  _grad_test[_i][_qp](0) * _Jacobian_mult[_qp](1, 0, k, l)) *
+                 (*_deigenstrain_dT)[_qp](k, l);
+      return jac * _phi[_j][_qp];
+    }
+  }
 
   return 0.0;
 }
@@ -96,8 +119,8 @@ StressDivergenceRZTensors::calculateJacobian(unsigned int ivar, unsigned int jva
   // B^T_i * C * B_j
   RealGradient test, test_z, phi, phi_z;
   Real first_term = 0.0;
-  if (ivar ==
-      0) // Case grad_test for x, requires contributions from stress_xx, stress_xy, and stress_zz
+  if (ivar == 0) // Case grad_test for x, requires contributions from stress_xx, stress_xy, and
+                 // stress_zz
   {
     test(0) = _grad_test[_i][_qp](0);
     test(1) = _grad_test[_i][_qp](1);

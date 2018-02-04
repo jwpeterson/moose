@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef SINGLEPHASEFLUIDPROPERTIES_H
 #define SINGLEPHASEFLUIDPROPERTIES_H
@@ -42,6 +44,8 @@ public:
   virtual Real k(Real v, Real u) const = 0;
   /// Specific entropy [ J / kg K ]
   virtual Real s(Real v, Real u) const = 0;
+  /// Specific entropy from enthalpy and pressure
+  virtual void s_from_h_p(Real h, Real p, Real & s, Real & ds_dh, Real & ds_dp) const = 0;
   /// The derivative of pressure wrt specific volume and specific internal energy
   virtual void
   dp_duv(Real v, Real u, Real & dp_dv, Real & dp_du, Real & dT_dv, Real & dT_du) const = 0;

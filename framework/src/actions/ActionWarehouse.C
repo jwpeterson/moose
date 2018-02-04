@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ActionWarehouse.h"
 #include "ActionFactory.h"
@@ -25,6 +20,8 @@
 #include "InfixIterator.h"
 #include "FEProblem.h"
 
+#include "libmesh/simple_range.h"
+
 ActionWarehouse::ActionWarehouse(MooseApp & app, Syntax & syntax, ActionFactory & factory)
   : ConsoleStreamInterface(app),
     _app(app),
@@ -37,6 +34,14 @@ ActionWarehouse::ActionWarehouse(MooseApp & app, Syntax & syntax, ActionFactory 
 }
 
 ActionWarehouse::~ActionWarehouse() {}
+
+void
+ActionWarehouse::setFinalTask(const std::string & task)
+{
+  if (!_syntax.hasTask(task))
+    mooseError("cannot use unregistered task '", task, "' as final task");
+  _final_task = task;
+}
 
 void
 ActionWarehouse::build()
@@ -69,14 +74,11 @@ ActionWarehouse::addActionBlock(std::shared_ptr<Action> action)
 {
   /**
    * Note: This routine uses the XTerm colors directly which is not advised for general purpose
-   * output coloring.
-   * Most users should prefer using Problem::colorText() which respects the "color_output" option
-   * for terminals
-   * that do not support coloring.  Since this routine is intended for debugging only and runs
-   * before several
-   * objects exist in the system, we are just using the constants directly.
+   * output coloring. Most users should prefer using Problem::colorText() which respects the
+   * "color_output" option for terminals that do not support coloring.  Since this routine is
+   * intended for debugging only and runs before several objects exist in the system, we are just
+   * using the constants directly.
    */
-
   std::string registered_identifier =
       action->parameters().get<std::string>("registered_identifier");
   std::set<std::string> tasks;
@@ -96,18 +98,15 @@ ActionWarehouse::addActionBlock(std::shared_ptr<Action> action)
    * consider:
    *
    * 1. The current Action is registered with multiple syntax blocks. In this case we can only use
-   * the
-   *    current instance to satisfy the specific task listed for this syntax block.  We can detect
-   * this
-   *    case by inspecting whether it has a "specific task name" set in the Action instance.
+   *    the current instance to satisfy the specific task listed for this syntax block.  We can
+   *    detect this case by inspecting whether it has a "specific task name" set in the Action
+   *    instance.
    *
    * 2. This action does not have a valid "registered identifier" set in the Action instance. This
-   * means
-   *    that this Action was not built by the Parser.  It was most likely created through a
-   * Meta-Action.
-   *    In this case, the ActionFactory itself would have already set the task it found from the
-   * build
-   *    info used to construct the Action.
+   *    means that this Action was not built by the Parser.  It was most likely created through a
+   *    Meta-Action (See Case 3 for exception). In this case, the ActionFactory itself would have
+   *    already set the task it found from the build info used to construct the Action so we'd
+   *    arbitrarily satisify a single task in this case.
    *
    * 3. The current Action is registered with only a single syntax block. In this case we can simply
    *    re-use the current instance to act and satisfy _all_ registered tasks. This is the normal
@@ -116,7 +115,8 @@ ActionWarehouse::addActionBlock(std::shared_ptr<Action> action)
    */
   if (action->specificTaskName() != "") // Case 1
     tasks.insert(action->specificTaskName());
-  else if (registered_identifier == "") // Case 2
+  else if (registered_identifier == "" &&
+           _syntax.getSyntaxByAction(action->type()).size() > 1) // Case 2
   {
     std::set<std::string> local_tasks = action->getAllTasks();
     mooseAssert(local_tasks.size() == 1, "More than one task inside of the " << action->name());
@@ -158,9 +158,9 @@ ActionWarehouse::addActionBlock(std::shared_ptr<Action> action)
                  << " (" << COLOR_YELLOW << task << COLOR_DEFAULT << ")\n";
 
     // Add it to the warehouse
-    _all_ptrs.push_back(action);
     _action_blocks[task].push_back(action.get());
   }
+  _all_ptrs.push_back(action);
 
   if (_show_parser)
     Moose::err << std::endl;
@@ -176,6 +176,12 @@ ActionIterator
 ActionWarehouse::actionBlocksWithActionEnd(const std::string & task)
 {
   return _action_blocks[task].end();
+}
+
+const std::vector<std::shared_ptr<Action>> &
+ActionWarehouse::allActionBlocks() const
+{
+  return _all_ptrs;
 }
 
 const std::list<Action *> &
@@ -200,21 +206,16 @@ ActionWarehouse::buildBuildableActions(const std::string & task)
   if (_syntax.isActionRequired(task) && _action_blocks[task].empty())
   {
     bool ret_value = false;
-    std::pair<std::multimap<std::string, std::string>::const_iterator,
-              std::multimap<std::string, std::string>::const_iterator>
-        range = _action_factory.getActionsByTask(task);
-    for (std::multimap<std::string, std::string>::const_iterator it = range.first;
-         it != range.second;
-         ++it)
+    auto it_pair = _action_factory.getActionsByTask(task);
+    for (const auto & action_pair : as_range(it_pair))
     {
-      InputParameters params = _action_factory.getValidParams(it->second);
+      InputParameters params = _action_factory.getValidParams(action_pair.second);
       params.set<ActionWarehouse *>("awh") = this;
 
       if (params.areAllRequiredParamsValid())
       {
         params.set<std::string>("registered_identifier") = "(AutoBuilt)";
-        params.set<std::string>("task") = task;
-        addActionBlock(_action_factory.create(it->second, "", params));
+        addActionBlock(_action_factory.create(action_pair.second, "", params));
         ret_value = true;
       }
     }
@@ -333,7 +334,11 @@ ActionWarehouse::executeAllActions()
   }
 
   for (const auto & task : _ordered_names)
+  {
     executeActionsWithAction(task);
+    if (_final_task != "" && task == _final_task)
+      break;
+  }
 }
 
 void
@@ -377,8 +382,8 @@ ActionWarehouse::printInputFile(std::ostream & out)
   for (const auto & act : ordered_actions)
   {
     std::string name;
-    if (act->isParamValid("parser_syntax"))
-      name = act->getParam<std::string>("parser_syntax");
+    if (act->parameters().blockFullpath() != "")
+      name = act->parameters().blockFullpath();
     else
       name = act->name();
     const std::set<std::string> & tasks = act->getAllTasks();

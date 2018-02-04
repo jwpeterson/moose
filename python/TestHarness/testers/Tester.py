@@ -1,3 +1,12 @@
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 import platform, re, os
 from TestHarness import util
 from FactorySystem.MooseObject import MooseObject
@@ -31,6 +40,7 @@ class Tester(MooseObject):
         params.addParam('allow_test_objects', False, "Allow the use of test objects by adding --allow-test-objects to the command line.")
 
         params.addParam('valgrind', 'NONE', "Set to (NONE, NORMAL, HEAVY) to determine which configurations where valgrind will run.")
+        params.addParam('tags',      [], "A list of strings")
 
         # Test Filters
         params.addParam('platform',      ['ALL'], "A list of platforms for which this test will run on. ('ALL', 'DARWIN', 'LINUX', 'SL', 'LION', 'ML')")
@@ -78,9 +88,12 @@ class Tester(MooseObject):
         MooseObject.__init__(self, name, params)
         self.specs = params
         self.outfile = None
-        self.std_out = ''
+        self.errfile = None
+        self.joined_out = ''
         self.exit_code = 0
         self.process = None
+        self.tags = params['tags']
+        self.__caveats = set([])
 
         # Bool if test can run
         self._runnable = None
@@ -286,7 +299,7 @@ class Tester(MooseObject):
         reason is left blank, this tester will be treated as silent (no status
         will be printed and will not be counted among the skipped tests).
         """
-        return (True, '')
+        return True
 
     def shouldExecute(self):
         """
@@ -310,11 +323,15 @@ class Tester(MooseObject):
         """ return number of processors to use for this tester """
         return 1
 
+    def getSlots(self, options):
+        """ return number of slots to use for this tester """
+        return self.getThreads(options) * self.getProcs(options)
+
     def getCommand(self, options):
         """ return the executable command that will be executed by the tester """
-        return
+        return ''
 
-    def runCommand(self, timer, options):
+    def runCommand(self, cmd, cwd, timer, options):
         """
         Helper method for running external (sub)processes as part of the tester's execution.  This
         uses the tester's getCommand and getTestDir methods to run a subprocess.  The timer must
@@ -328,28 +345,36 @@ class Tester(MooseObject):
         self.process = None
         try:
             f = TemporaryFile()
+            e = TemporaryFile()
+
             # On Windows, there is an issue with path translation when the command is passed in
             # as a list.
             if platform.system() == "Windows":
-                process = subprocess.Popen(cmd,stdout=f,stderr=f,close_fds=False, shell=True, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP, cwd=cwd)
+                process = subprocess.Popen(cmd, stdout=f, stderr=e, close_fds=False,
+                                           shell=True, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP, cwd=cwd)
             else:
-                process = subprocess.Popen(cmd,stdout=f,stderr=f,close_fds=False, shell=True, preexec_fn=os.setsid, cwd=cwd)
+                process = subprocess.Popen(cmd, stdout=f, stderr=e, close_fds=False,
+                                           shell=True, preexec_fn=os.setsid, cwd=cwd)
         except:
             print("Error in launching a new task", cmd)
             raise
 
         self.process = process
         self.outfile = f
+        self.errfile = e
 
         timer.start()
         process.wait()
         timer.stop()
 
         self.exit_code = process.poll()
+        self.outfile.flush()
+        self.errfile.flush()
 
         # store the contents of output, and close the file
-        self.std_out = util.readOutput(self.outfile, options)
+        self.joined_out = util.readOutput(self.outfile, self.errfile, options)
         self.outfile.close()
+        self.errfile.close()
 
     def killCommand(self):
         """
@@ -374,7 +399,10 @@ class Tester(MooseObject):
         if needed. The run method is responsible to call the start+stop methods on timer to record
         the time taken to run the actual test.  start+stop can be called multiple times.
         """
-        self.runCommand(timer, options)
+        cmd = self.getCommand(options)
+        cwd = self.getTestDir()
+
+        self.runCommand(cmd, cwd, timer, options)
 
     def processResultsCommand(self, moose_dir, options):
         """ method to return the commands (list) used for processing results """
@@ -392,6 +420,15 @@ class Tester(MooseObject):
         """ return a list of redirected output """
         return [os.path.join(self.getTestDir(), self.name() + '.processor.{}'.format(p)) for p in xrange(self.getProcs(options))]
 
+    def addCaveats(self, *kwargs):
+        """ Add caveat(s) which will be displayed with the final test status """
+        self.__caveats.update(kwargs)
+        return self.getCaveats()
+
+    def getCaveats(self):
+        """ Return caveats accumalted by this tester """
+        return self.__caveats
+
     def checkRunnableBase(self, options):
         """
         Method to check for caveats that would prevent this tester from
@@ -402,8 +439,17 @@ class Tester(MooseObject):
         reasons = {}
         checks = options._checks
 
-        # If the something has already deemed this test a failure, return now
-        if self.didFail():
+        tag_match = False
+        for t in self.tags:
+            if t in options.runtags:
+                tag_match = True
+                break
+        if len(options.runtags) > 0 and not tag_match:
+            self.setStatus('no tag', self.bucket_silent)
+            return False
+
+        # If something has already deemed this test a failure or is silent, return now
+        if self.didFail() or self.isSilent():
             return False
 
         # If --dry-run set the test status to pass and DO NOT return.
@@ -420,10 +466,14 @@ class Tester(MooseObject):
                 return False
 
         # Check if we only want to run syntax tests
-        if options.check_input:
-            if not self.specs['check_input']:
-                self.setStatus('not check_input', self.bucket_silent)
-                return False
+        if options.check_input and not self.specs['check_input']:
+            self.setStatus('not check_input', self.bucket_silent)
+            return False
+
+        # Check if we want to exclude syntax tests
+        if options.no_check_input and self.specs['check_input']:
+            self.setStatus('is check_input', self.bucket_silent)
+            return False
 
         # Are we running only tests in a specific group?
         if options.group <> 'ALL' and options.group not in self.specs['group']:
@@ -451,16 +501,19 @@ class Tester(MooseObject):
 
         # Check for deleted tests
         if self.specs.isValid('deleted'):
-            reasons['deleted'] = 'deleted (' + self.specs['deleted'] + ')'
+            reasons['deleted'] = str(self.specs['deleted'])
 
-        # Check for skipped tests
-        if self.specs.type('skip') is bool and self.specs['skip']:
+        # Skipped by external means (example: TestHarness part2 with --check-input)
+        if self.isSkipped():
+            reasons['skip'] = self.getStatusMessage()
+        # Test is skipped
+        elif self.specs.type('skip') is bool and self.specs['skip']:
             # Backwards compatible (no reason)
             reasons['skip'] = 'no reason'
         elif self.specs.type('skip') is not bool and self.specs.isValid('skip'):
             reasons['skip'] = self.specs['skip']
         # If were testing for SCALE_REFINE, then only run tests with a SCALE_REFINE set
-        elif (options.store_time or options.scaling) and self.specs['scale_refine'] == 0:
+        elif (options.scaling) and self.specs['scale_refine'] == 0:
             self.setStatus('silent', self.bucket_silent)
             return False
         # If we're testing with valgrind, then skip tests that require parallel or threads or don't meet the valgrind setting
@@ -523,10 +576,6 @@ class Tester(MooseObject):
         elif self.specs['heavy']:
             reasons['heavy'] = 'HEAVY'
 
-        # Check for positive scale refine values when using store timing options
-        if self.specs['scale_refine'] == 0 and options.store_time:
-            reasons['scale_refine'] = 'scale_refine==0 store_time=True'
-
         # There should only be one entry in self.specs['dof_id_bytes']
         for x in self.specs['dof_id_bytes']:
             if x != 'ALL' and not x in checks['dof_id_bytes']:
@@ -578,17 +627,14 @@ class Tester(MooseObject):
                 if key.lower() not in caveat_list:
                     tmp_reason.append(value)
 
-            # Format joined reason to better fit on the screen
-            if len(', '.join(tmp_reason)) >= util.TERM_COLS - (len(self.specs['test_name'])+21):
-                flat_reason = (', '.join(tmp_reason))[:(util.TERM_COLS - (len(self.specs['test_name'])+24))] + '...'
-            else:
-                flat_reason = ', '.join(tmp_reason)
+            flat_reason = ', '.join(tmp_reason)
 
             # If the test is deleted we still need to treat this differently
+            self.addCaveats(flat_reason)
             if 'deleted' in reasons.keys():
-                self.setStatus(flat_reason, self.bucket_deleted)
+                self.setStatus(self.bucket_deleted.status, self.bucket_deleted)
             else:
-                self.setStatus(flat_reason, self.bucket_skip)
+                self.setStatus(self.bucket_skip.status, self.bucket_skip)
             return False
 
         # Check the return values of the derived classes

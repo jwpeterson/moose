@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef XFEMCUTELEM2D_H
 #define XFEMCUTELEM2D_H
@@ -23,7 +25,17 @@ class Node;
 class XFEMCutElem2D : public XFEMCutElem
 {
 public:
-  XFEMCutElem2D(Elem * elem, const EFAElement2D * const CEMelem, unsigned int n_qpoints);
+  /**
+   * Constructor initializes XFEMCutElem2D object
+   * @param elem The element on which XFEMCutElem2D is built
+   * @param CEMelem The EFAFragment2D object that belongs to XFEMCutElem2D
+   * @param n_qpoints The number of quadrature points
+   * @param n_sides The number of sides which the element has
+   */
+  XFEMCutElem2D(Elem * elem,
+                const EFAElement2D * const CEMelem,
+                unsigned int n_qpoints,
+                unsigned int n_sides);
   ~XFEMCutElem2D();
 
 private:
@@ -32,6 +44,7 @@ private:
 
 public:
   virtual void computePhysicalVolumeFraction();
+  virtual void computePhysicalFaceAreaFraction(unsigned int side);
   virtual void computeMomentFittingWeights();
   virtual Point getCutPlaneOrigin(unsigned int plane_id, MeshBase * displaced_mesh = NULL) const;
   virtual Point getCutPlaneNormal(unsigned int plane_id, MeshBase * displaced_mesh = NULL) const;

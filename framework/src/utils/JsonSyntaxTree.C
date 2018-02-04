@@ -1,24 +1,21 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "JsonSyntaxTree.h"
 
 // MOOSE includes
 #include "MooseEnum.h"
 #include "MultiMooseEnum.h"
+#include "ExecFlagEnum.h"
 #include "Parser.h"
 #include "pcrecpp.h"
+#include "Action.h"
 
 // C++ includes
 #include <algorithm>
@@ -214,6 +211,15 @@ JsonSyntaxTree::buildOptions(const std::iterator_traits<InputParameters::iterato
     }
   }
   {
+    InputParameters::Parameter<ExecFlagEnum> * enum_type =
+        dynamic_cast<InputParameters::Parameter<ExecFlagEnum> *>(p.second);
+    if (enum_type)
+    {
+      out_of_range_allowed = enum_type->get().isOutOfRangeAllowed();
+      options = enum_type->get().getRawNames();
+    }
+  }
+  {
     InputParameters::Parameter<std::vector<MooseEnum>> * enum_type =
         dynamic_cast<InputParameters::Parameter<std::vector<MooseEnum>> *>(p.second);
     if (enum_type)
@@ -301,6 +307,7 @@ JsonSyntaxTree::basicCppType(const std::string & cpp_type)
     s = "Array:" + basicCppType(t);
   }
   else if (cpp_type.find("MultiMooseEnum") != std::string::npos ||
+           cpp_type.find("ExecFlagEnum") != std::string::npos ||
            cpp_type.find("VectorPostprocessorName") != std::string::npos)
     s = "Array:String";
   else if (cpp_type.find("libMesh::Point") != std::string::npos)

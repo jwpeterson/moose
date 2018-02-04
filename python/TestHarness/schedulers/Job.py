@@ -1,4 +1,13 @@
-import re
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
+import re, os
 from timeit import default_timer as clock
 
 
@@ -39,12 +48,13 @@ class Job(object):
         self.__tester = tester
         self.timer = Timer()
         self.__dag = tester_dag
-        self.__dag_clone = None
         self.__outfile = None
         self.__start_time = clock()
         self.__end_time = None
-        self.__std_out = ''
+        self.__joined_out = ''
         self.report_timer = None
+        self.__slots = None
+        self.__unique_identifier = os.path.join(tester.getTestDir(), tester.getTestName())
 
     def getTester(self):
         """ Return the tester object """
@@ -55,29 +65,27 @@ class Job(object):
         return self.__dag
 
     def getOriginalDAG(self):
-        """
-        Retreive the DAG object from the state it was when setOriginalDAG was called or the current
-        state it is in now, if setOriginalDAG was never called.
-        """
-
-        return self.setOriginalDAG()
-
-    def setOriginalDAG(self):
-        """
-        Create a soft clone of the working DAG for what ever state it is currently in. This method
-        should only be called once, and once the working DAG is properly set up.
-
-        This is to protect the DAG from further tampering.
-        """
-
-        if self.__dag_clone == None:
-            self.__dag_clone = self.__dag.clone()
-        return self.__dag_clone
+        """ Return the DAG object as it was in its original form """
+        return self.__dag.getOriginalDAG()
 
     def getTestName(self):
         """ Wrapper method to return the testers test name """
         return self.__tester.getTestName()
 
+    def getUniqueIdentifier(self):
+        """ A unique identifier for this job object """
+        return self.__unique_identifier
+
+    def getSlots(self):
+        """ Return the number of slots this job consumes """
+        if self.__slots == None:
+            return self.setSlots(self.__tester.getSlots(self.options))
+        return self.__slots
+
+    def setSlots(self, slots):
+        """ Set the number of processors this job consumes """
+        self.__slots = int(slots)
+        return self.__slots
 
     def run(self):
         """
@@ -90,11 +98,12 @@ class Job(object):
             self.__tester.setStatus(self.__tester.getSuccessMessage(), self.__tester.bucket_success)
             return
 
+        self.__start_time = clock()
         self.timer.reset()
         self.__tester.run(self.timer, self.options)
         self.__start_time = self.timer.starts[0]
         self.__end_time = self.timer.ends[-1]
-        self.__std_out = self.__tester.std_out
+        self.__joined_out = self.__tester.joined_out
 
     def killProcess(self):
         """ Kill remaining process that may be running """
@@ -110,23 +119,24 @@ class Job(object):
 
     def getOutput(self):
         """ Return the contents of output """
-        return self.__std_out
+        return self.__joined_out
 
     def setOutput(self, output):
-        """ Method to allow testers to overwrite the output if certain conditions are met """
-        if self.__tester.outfile is not None and not self.__tester.outfile.closed:
+        """ Method to allow schedulers to overwrite the output if certain conditions are met """
+        if (not self.__tester.outfile is None and not self.__tester.outfile.closed
+           and not self.__tester.errfile is None and not self.__tester.errfile.closed):
             return
-        self.__std_out = output
+        self.__joined_out = output
 
     def getActiveTime(self):
         """ Return active time """
-        m = re.search(r"Active time=(\S+)", self.__std_out)
+        m = re.search(r"Active time=(\S+)", self.__joined_out)
         if m != None:
             return m.group(1)
 
     def getSolveTime(self):
         """ Return solve time """
-        m = re.search(r"solve().*", self.__std_out)
+        m = re.search(r"solve().*", self.__joined_out)
         if m != None:
             return m.group().split()[5]
 

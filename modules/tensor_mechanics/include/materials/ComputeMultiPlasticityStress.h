@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef COMPUTEMULTIPLASTICITYSTRESS_H
 #define COMPUTEMULTIPLASTICITYSTRESS_H
 
@@ -582,6 +585,7 @@ protected:
                                            const std::vector<Real> & cumulative_pm);
 
 private:
+  // InitialStress Deprecation: remove _step_one parameter
   /// True if this is the first timestep (timestep < 2). In the first timestep,
   /// an initial stress is needed to subdivide.  This boolean variable
   /// eliminates the use of the _app.isRestarting() in this class.

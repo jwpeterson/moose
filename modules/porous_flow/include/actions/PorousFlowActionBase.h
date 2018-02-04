@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef POROUSFLOWACTIONBASE_H
 #define POROUSFLOWACTIONBASE_H
 
@@ -60,6 +63,9 @@ protected:
 
   /// displacement Variable names
   std::vector<VariableName> _coupled_displacements;
+
+  /// Coordinate system of the simulation (eg RZ, XYZ, etc)
+  Moose::CoordinateSystemType _coord_system;
 
   /**
    * add the PorousFlowDictator object
@@ -125,6 +131,22 @@ protected:
                                        bool compute_internal_energy,
                                        bool compute_enthalpy,
                                        const UserObjectName & fp);
+
+  /**
+   * Adds a brine fluid Material
+   * @param xnacl the variable containing the mass fraction of NaCl in the fluid
+   * @param phase the phase number of the fluid
+   * @param compute_density_and_viscosity compute the density and viscosity of the fluid
+   * @param compute_internal_energy compute the fluid internal energy
+   * @param compute_enthalpy compute the fluid enthalpy
+   * @param at_nodes add a nodal material
+   */
+  void addBrineMaterial(const VariableName xnacl,
+                        bool at_nodes,
+                        unsigned phase,
+                        bool compute_density_and_viscosity,
+                        bool compute_internal_energy,
+                        bool compute_enthalpy);
 
   /**
    * Adds a relative-permeability Material of the Corey variety

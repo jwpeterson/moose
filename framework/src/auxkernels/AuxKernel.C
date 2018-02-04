@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "AuxKernel.h"
 
@@ -62,16 +57,16 @@ validParams<AuxKernel>()
 
 AuxKernel::AuxKernel(const InputParameters & parameters)
   : MooseObject(parameters),
-    BlockRestrictable(parameters),
-    BoundaryRestrictable(parameters,
-                         parameters.get<AuxiliarySystem *>("_aux_sys")
+    BlockRestrictable(this),
+    BoundaryRestrictable(this,
+                         parameters.getCheckedPointerParam<AuxiliarySystem *>("_aux_sys")
                              ->getVariable(parameters.get<THREAD_ID>("_tid"),
                                            parameters.get<AuxVariableName>("variable"))
                              .isNodal()),
     SetupInterface(this),
     CoupleableMooseVariableDependencyIntermediateInterface(
         this,
-        parameters.get<AuxiliarySystem *>("_aux_sys")
+        parameters.getCheckedPointerParam<AuxiliarySystem *>("_aux_sys")
             ->getVariable(parameters.get<THREAD_ID>("_tid"),
                           parameters.get<AuxVariableName>("variable"))
             .isNodal()),
@@ -82,21 +77,20 @@ AuxKernel::AuxKernel(const InputParameters & parameters)
     PostprocessorInterface(this),
     DependencyResolverInterface(),
     RandomInterface(parameters,
-                    *parameters.get<FEProblemBase *>("_fe_problem_base"),
+                    *parameters.getCheckedPointerParam<FEProblemBase *>("_fe_problem_base"),
                     parameters.get<THREAD_ID>("_tid"),
-                    parameters.get<AuxiliarySystem *>("_aux_sys")
+                    parameters.getCheckedPointerParam<AuxiliarySystem *>("_aux_sys")
                         ->getVariable(parameters.get<THREAD_ID>("_tid"),
                                       parameters.get<AuxVariableName>("variable"))
                         .isNodal()),
     GeometricSearchInterface(this),
     Restartable(parameters, "AuxKernels"),
-    ZeroInterface(parameters),
     MeshChangedInterface(parameters),
     VectorPostprocessorInterface(this),
-    _subproblem(*parameters.get<SubProblem *>("_subproblem")),
-    _sys(*parameters.get<SystemBase *>("_sys")),
-    _nl_sys(*parameters.get<SystemBase *>("_nl_sys")),
-    _aux_sys(*parameters.get<AuxiliarySystem *>("_aux_sys")),
+    _subproblem(*getCheckedPointerParam<SubProblem *>("_subproblem")),
+    _sys(*getCheckedPointerParam<SystemBase *>("_sys")),
+    _nl_sys(*getCheckedPointerParam<SystemBase *>("_nl_sys")),
+    _aux_sys(*getCheckedPointerParam<AuxiliarySystem *>("_aux_sys")),
     _tid(parameters.get<THREAD_ID>("_tid")),
     _assembly(_subproblem.assembly(_tid)),
 
@@ -248,12 +242,6 @@ AuxKernel::compute()
       _var.setNodalValue(_local_sol);
     }
   }
-}
-
-bool
-AuxKernel::isNodal()
-{
-  return _nodal;
 }
 
 const VariableValue &

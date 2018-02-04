@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "MooseMesh.h"
 #include "Factory.h"
@@ -18,6 +13,7 @@
 #include "Assembly.h"
 #include "MooseUtils.h"
 #include "MooseApp.h"
+#include "RelationshipManager.h"
 
 #include <utility>
 
@@ -66,16 +62,6 @@ validParams<MooseMesh>()
 {
   InputParameters params = validParams<MooseObject>();
 
-  MooseEnum mesh_distribution_type("PARALLEL=0 SERIAL DEFAULT", "DEFAULT");
-  params.addParam<MooseEnum>(
-      "distribution",
-      mesh_distribution_type,
-      "PARALLEL: Always use libMesh::DistributedMesh "
-      "SERIAL: Always use libMesh::ReplicatedMesh "
-      "DEFAULT: Use libMesh::ReplicatedMesh unless --distributed-mesh is specified on the command "
-      "line "
-      "The distribution flag is deprecated, use parallel_type={DISTRIBUTED,REPLICATED} instead.");
-
   MooseEnum mesh_parallel_type("DISTRIBUTED=0 REPLICATED DEFAULT", "DEFAULT");
   params.addParam<MooseEnum>("parallel_type",
                              mesh_parallel_type,
@@ -115,38 +101,46 @@ validParams<MooseMesh>()
                              "Specifies the sort direction if using the centroid partitioner. "
                              "Available options: x, y, z, radial");
 
-  MooseEnum patch_update_strategy("never always auto", "never");
-  params.addParam<MooseEnum>("patch_update_strategy",
-                             patch_update_strategy,
-                             "How often to update the geometric search 'patch'.  The default is to "
-                             "never update it (which is the most efficient but could be a problem "
-                             "with lots of relative motion).  'always' will update the patch every "
-                             "timestep which might be time consuming.  'auto' will attempt to "
-                             "determine when the patch size needs to be updated automatically.");
+  MooseEnum patch_update_strategy("never always auto iteration", "never");
+  params.addParam<MooseEnum>(
+      "patch_update_strategy",
+      patch_update_strategy,
+      "How often to update the geometric search 'patch'.  The default is to "
+      "never update it (which is the most efficient but could be a problem "
+      "with lots of relative motion). 'always' will update the patch for all "
+      "slave nodes at the beginning of every timestep which might be time "
+      "consuming. 'auto' will attempt to determine at the start of which "
+      "timesteps the patch for all slave nodes needs to be updated automatically."
+      "'iteration' updates the patch at every nonlinear iteration for a "
+      "subset of slave nodes for which penetration is not detected. If there "
+      "can be substantial relative motion between the master and slave surfaces "
+      "during the nonlinear iterations within a timestep, it is advisable to use "
+      "'iteration' option to ensure accurate contact detection.");
 
   // Note: This parameter is named to match 'construct_side_list_from_node_list' in SetupMeshAction
   params.addParam<bool>(
       "construct_node_list_from_side_list",
       true,
       "Whether or not to generate nodesets from the sidesets (usually a good idea).");
-  params.addParam<unsigned short>("num_ghosted_layers",
-                                  1,
-                                  "Parameter to specify the number of geometric element layers"
-                                  " that will be available when DistributedMesh is used. Value is "
-                                  "ignored in ReplicatedMesh mode");
-  params.addParam<bool>("ghost_point_neighbors",
-                        false,
-                        "Boolean to specify whether or not all point neighbors are ghosted"
-                        " when DistributedMesh is used. Value is ignored in ReplicatedMesh mode");
   params.addParam<unsigned int>(
       "patch_size", 40, "The number of nodes to consider in the NearestNode neighborhood.");
+  params.addParam<unsigned int>("ghosting_patch_size",
+                                "The number of nearest neighbors considered "
+                                "for ghosting purposes when 'iteration' "
+                                "patch update strategy is used. Default is "
+                                "5 * patch_size.");
+  params.addParam<unsigned int>("max_leaf_size",
+                                10,
+                                "The maximum number of points in each leaf of the KDTree used in "
+                                "the nearest neighbor search. As the leaf size becomes larger,"
+                                "KDTree construction becomes faster but the nearest neighbor search"
+                                "becomes slower.");
 
   params.registerBase("MooseMesh");
 
   // groups
   params.addParamNamesToGroup(
-      "dim nemesis patch_update_strategy construct_node_list_from_side_list num_ghosted_layers"
-      " ghost_point_neighbors patch_size",
+      "dim nemesis patch_update_strategy construct_node_list_from_side_list patch_size",
       "Advanced");
   params.addParamNamesToGroup("partitioner centroid_partitioner_direction", "Partitioning");
 
@@ -156,7 +150,6 @@ validParams<MooseMesh>()
 MooseMesh::MooseMesh(const InputParameters & parameters)
   : MooseObject(parameters),
     Restartable(parameters, "Mesh"),
-    _mesh_distribution_type(getParam<MooseEnum>("distribution")),
     _mesh_parallel_type(getParam<MooseEnum>("parallel_type")),
     _use_distributed_mesh(false),
     _distribution_overridden(false),
@@ -171,36 +164,29 @@ MooseMesh::MooseMesh(const InputParameters & parameters)
     _node_to_elem_map_built(false),
     _node_to_active_semilocal_elem_map_built(false),
     _patch_size(getParam<unsigned int>("patch_size")),
-    _patch_update_strategy(getParam<MooseEnum>("patch_update_strategy")),
+    _ghosting_patch_size(isParamValid("ghosting_patch_size")
+                             ? getParam<unsigned int>("ghosting_patch_size")
+                             : 5 * _patch_size),
+    _max_leaf_size(getParam<unsigned int>("max_leaf_size")),
     _regular_orthogonal_mesh(false),
     _allow_recovery(true),
     _construct_node_list_from_side_list(getParam<bool>("construct_node_list_from_side_list"))
 {
-  // This flag is deprecated, but we still allow it to be used. It
-  // will still do the same thing as it did before, but now it will
-  // print a deprecated message.
-  switch (_mesh_distribution_type)
-  {
-    case 0: // PARALLEL
-      mooseDeprecated("Using 'distribution = PARALLEL' in the Mesh block is deprecated, use "
-                      "'parallel_type = DISTRIBUTED' instead.");
-      _use_distributed_mesh = true;
-      break;
+  MooseEnum temp_patch_update_strategy = getParam<MooseEnum>("patch_update_strategy");
+  if (temp_patch_update_strategy == "never")
+    _patch_update_strategy = Moose::Never;
+  else if (temp_patch_update_strategy == "always")
+    _patch_update_strategy = Moose::Always;
+  else if (temp_patch_update_strategy == "auto")
+    _patch_update_strategy = Moose::Auto;
+  else if (temp_patch_update_strategy == "iteration")
+    _patch_update_strategy = Moose::Iteration;
+  else
+    mooseError("Patch update strategy should be never, always, auto or iteration.");
 
-    case 1: // SERIAL
-      mooseDeprecated("Using 'distribution = SERIAL' in the Mesh block is deprecated, use "
-                      "'parallel_type = REPLICATED' instead.");
-      if (_app.getDistributedMeshOnCommandLine() || _is_nemesis)
-        _distribution_overridden = true;
-      break;
-
-    case 2: // DEFAULT
-      // If the user did not specify any 'distribution = foo' in his
-      // input file, there's nothing to do.  In particular, we do not
-      // want to allow the command line to override the default mesh
-      // type in this case.
-      break;
-  }
+  if (isParamValid("ghosting_patch_size") && (_patch_update_strategy != Moose::Iteration))
+    mooseError("Ghosting patch size parameter has to be set in the mesh block "
+               "only when 'iteration' patch update strategy is used.");
 
   switch (_mesh_parallel_type)
   {
@@ -222,8 +208,7 @@ MooseMesh::MooseMesh(const InputParameters & parameters)
       // No default switch needed for MooseEnum
   }
 
-  // If the user specifies 'nemesis = true' in the Mesh block, we
-  // must use DistributedMesh.
+  // If the user specifies 'nemesis = true' in the Mesh block, we must use DistributedMesh.
   if (_is_nemesis)
     _use_distributed_mesh = true;
 
@@ -237,21 +222,6 @@ MooseMesh::MooseMesh(const InputParameters & parameters)
       _partitioner_name = "parmetis";
       _partitioner_overridden = true;
     }
-
-    // Add geometric ghosting functors to mesh if running with DistributedMesh
-    if (getParam<bool>("ghost_point_neighbors"))
-      _ghosting_functors.emplace_back(libmesh_make_unique<GhostPointNeighbors>(*_mesh));
-
-    auto num_ghosted_layers = getParam<unsigned short>("num_ghosted_layers");
-    if (num_ghosted_layers > 1)
-    {
-      auto default_coupling = libmesh_make_unique<DefaultCoupling>();
-      default_coupling->set_n_levels(num_ghosted_layers);
-      _ghosting_functors.emplace_back(std::move(default_coupling));
-    }
-
-    for (auto & gf : _ghosting_functors)
-      _mesh->add_ghosting_functor(*gf);
   }
   else
     _mesh = libmesh_make_unique<ReplicatedMesh>(_communicator, dim);
@@ -263,7 +233,6 @@ MooseMesh::MooseMesh(const InputParameters & parameters)
 MooseMesh::MooseMesh(const MooseMesh & other_mesh)
   : MooseObject(other_mesh._pars),
     Restartable(_pars, "Mesh"),
-    _mesh_distribution_type(other_mesh._mesh_distribution_type),
     _mesh_parallel_type(other_mesh._mesh_parallel_type),
     _use_distributed_mesh(other_mesh._use_distributed_mesh),
     _distribution_overridden(other_mesh._distribution_overridden),
@@ -276,6 +245,8 @@ MooseMesh::MooseMesh(const MooseMesh & other_mesh)
     _needs_prepare_for_use(false),
     _node_to_elem_map_built(false),
     _patch_size(other_mesh._patch_size),
+    _ghosting_patch_size(other_mesh._ghosting_patch_size),
+    _max_leaf_size(other_mesh._max_leaf_size),
     _patch_update_strategy(other_mesh._patch_update_strategy),
     _regular_orthogonal_mesh(false),
     _construct_node_list_from_side_list(other_mesh._construct_node_list_from_side_list)
@@ -365,11 +336,9 @@ MooseMesh::prepare(bool force)
   }
 
   // Collect (local) subdomain IDs
-  const MeshBase::element_iterator el_end = getMesh().elements_end();
-
   _mesh_subdomains.clear();
-  for (MeshBase::element_iterator el = getMesh().elements_begin(); el != el_end; ++el)
-    _mesh_subdomains.insert((*el)->subdomain_id());
+  for (const auto & elem : getMesh().element_ptr_range())
+    _mesh_subdomains.insert(elem->subdomain_id());
 
   // Make sure nodesets have been generated
   buildNodeListFromSideList();
@@ -687,12 +656,9 @@ MooseMesh::nodeToElemMap()
     Threads::spin_mutex::scoped_lock lock(Threads::spin_mtx);
     if (!_node_to_elem_map_built)
     {
-      MeshBase::const_element_iterator el = getMesh().active_elements_begin();
-      const MeshBase::const_element_iterator end = getMesh().active_elements_end();
-
-      for (; el != end; ++el)
-        for (unsigned int n = 0; n < (*el)->n_nodes(); n++)
-          _node_to_elem_map[(*el)->node(n)].push_back((*el)->id());
+      for (const auto & elem : getMesh().active_element_ptr_range())
+        for (unsigned int n = 0; n < elem->n_nodes(); n++)
+          _node_to_elem_map[elem->node(n)].push_back(elem->id());
 
       _node_to_elem_map_built = true; // MUST be set at the end for double-checked locking to work!
     }
@@ -787,13 +753,9 @@ MooseMesh::getBoundaryElementRange()
 void
 MooseMesh::cacheInfo()
 {
-  const MeshBase::element_iterator end = getMesh().elements_end();
-
   // TODO: Thread this!
-  for (MeshBase::element_iterator el = getMesh().elements_begin(); el != end; ++el)
+  for (const auto & elem : getMesh().element_ptr_range())
   {
-    Elem * elem = *el;
-
     SubdomainID subdomain_id = elem->subdomain_id();
 
     for (unsigned int side = 0; side < elem->n_sides(); side++)
@@ -868,11 +830,8 @@ MooseMesh::addUniqueNode(const Point & p, Real tol)
   {
     _node_map.clear();
     _node_map.reserve(getMesh().n_nodes());
-    const libMesh::MeshBase::node_iterator end = getMesh().nodes_end();
-    for (libMesh::MeshBase::node_iterator i = getMesh().nodes_begin(); i != end; ++i)
-    {
-      _node_map.push_back(*i);
-    }
+    for (const auto & node : getMesh().node_ptr_range())
+      _node_map.push_back(node);
   }
 
   Node * node = nullptr;
@@ -1142,8 +1101,6 @@ MooseMesh::buildPeriodicNodeMap(std::multimap<dof_id_type, dof_id_type> & period
 
   periodic_node_map.clear();
 
-  MeshBase::const_element_iterator it = getMesh().active_elements_begin();
-  MeshBase::const_element_iterator it_end = getMesh().active_elements_end();
   std::unique_ptr<PointLocatorBase> point_locator = getMesh().sub_point_locator();
 
   // Get a const reference to the BoundaryInfo object that we will use several times below...
@@ -1155,9 +1112,7 @@ MooseMesh::buildPeriodicNodeMap(std::multimap<dof_id_type, dof_id_type> & period
   // Container to catch IDs passed back from the BoundaryInfo object
   std::vector<boundary_id_type> bc_ids;
 
-  for (; it != it_end; ++it)
-  {
-    const Elem * elem = *it;
+  for (const auto & elem : getMesh().active_element_ptr_range())
     for (unsigned int s = 0; s < elem->n_sides(); ++s)
     {
       if (elem->neighbor_ptr(s))
@@ -1204,7 +1159,6 @@ MooseMesh::buildPeriodicNodeMap(std::multimap<dof_id_type, dof_id_type> & period
         }
       }
     }
-  }
 }
 
 void
@@ -1245,18 +1199,14 @@ MooseMesh::detectOrthogonalDimRanges(Real tol)
   unsigned int dim = getMesh().mesh_dimension();
 
   // Find the bounding box of our mesh
-  const MeshBase::node_iterator nd_end = getMesh().nodes_end();
-  for (MeshBase::node_iterator nd = getMesh().nodes_begin(); nd != nd_end; ++nd)
-  {
-    Node & node = **nd;
+  for (const auto & node : getMesh().node_ptr_range())
     for (unsigned int i = 0; i < dim; ++i)
     {
-      if (node(i) < min[i])
-        min[i] = node(i);
-      if (node(i) > max[i])
-        max[i] = node(i);
+      if ((*node)(i) < min[i])
+        min[i] = (*node)(i);
+      if ((*node)(i) > max[i])
+        max[i] = (*node)(i);
     }
-  }
 
   this->comm().max(max);
   this->comm().min(min);
@@ -1265,20 +1215,19 @@ MooseMesh::detectOrthogonalDimRanges(Real tol)
   // Now make sure that there are actual nodes at all of the extremes
   std::vector<bool> extreme_matches(8, false);
   std::vector<unsigned int> comp_map(3);
-  for (MeshBase::node_iterator nd = getMesh().nodes_begin(); nd != nd_end; ++nd)
+  for (const auto & node : getMesh().node_ptr_range())
   {
     // See if the current node is located at one of the extremes
-    Node & node = **nd;
     unsigned int coord_match = 0;
 
     for (unsigned int i = 0; i < dim; ++i)
     {
-      if (std::abs(node(i) - min[i]) < tol)
+      if (std::abs((*node)(i)-min[i]) < tol)
       {
         comp_map[i] = MIN;
         ++coord_match;
       }
-      else if (std::abs(node(i) - max[i]) < tol)
+      else if (std::abs((*node)(i)-max[i]) < tol)
       {
         comp_map[i] = MAX;
         ++coord_match;
@@ -1287,7 +1236,7 @@ MooseMesh::detectOrthogonalDimRanges(Real tol)
 
     if (coord_match == dim) // Found a coordinate at one of the extremes
     {
-      _extreme_nodes[comp_map[X] * 4 + comp_map[Y] * 2 + comp_map[Z]] = &node;
+      _extreme_nodes[comp_map[X] * 4 + comp_map[Y] * 2 + comp_map[Z]] = node;
       extreme_matches[comp_map[X] * 4 + comp_map[Y] * 2 + comp_map[Z]] = true;
     }
   }
@@ -1530,16 +1479,12 @@ MooseMesh::getPairedBoundaryMapping(unsigned int component)
 void
 MooseMesh::buildRefinementAndCoarseningMaps(Assembly * assembly)
 {
-  MeshBase::const_element_iterator el = getMesh().elements_begin();
-  const MeshBase::const_element_iterator end_el = getMesh().elements_end();
-
   std::map<ElemType, Elem *> canonical_elems;
 
   // First, loop over all elements and find a canonical element for each type
   // Doing it this way guarantees that this is going to work in parallel
-  for (; el != end_el; ++el) // TODO: Thread this
+  for (const auto & elem : getMesh().element_ptr_range()) // TODO: Thread this
   {
-    Elem * elem = *el;
     ElemType type = elem->type();
 
     if (canonical_elems.find(type) ==
@@ -2040,20 +1985,6 @@ MooseMesh::getBlockOrBoundaryIDs() const
   return getBoundaryIDs();
 }
 
-template <>
-SubdomainID
-MooseMesh::getAnyID() const
-{
-  return Moose::ANY_BLOCK_ID;
-}
-
-template <>
-BoundaryID
-MooseMesh::getAnyID() const
-{
-  return Moose::ANY_BOUNDARY_ID;
-}
-
 void
 MooseMesh::buildNodeListFromSideList()
 {
@@ -2396,12 +2327,12 @@ MooseMesh::getPatchSize() const
 }
 
 void
-MooseMesh::setPatchUpdateStrategy(MooseEnum patch_update_strategy)
+MooseMesh::setPatchUpdateStrategy(Moose::PatchUpdateType patch_update_strategy)
 {
   _patch_update_strategy = patch_update_strategy;
 }
 
-const MooseEnum &
+const Moose::PatchUpdateType &
 MooseMesh::getPatchUpdateStrategy() const
 {
   return _patch_update_strategy;
@@ -2557,14 +2488,6 @@ MooseMesh::errorIfDistributedMesh(std::string name) const
                " with DistributedMesh!\n",
                "Consider specifying parallel_type = 'replicated' in your input file\n",
                "to prevent it from being run with DistributedMesh.");
-}
-
-void
-MooseMesh::errorIfParallelDistribution(std::string name) const
-{
-  mooseDeprecated(
-      "errorIfParallelDistribution() is deprecated, call errorIfDistributedMesh() instead.");
-  errorIfDistributedMesh(name);
 }
 
 MooseMesh::MortarInterface *

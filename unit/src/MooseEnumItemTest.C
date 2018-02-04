@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "gtest/gtest.h"
 
@@ -79,4 +74,27 @@ TEST(MooseEnumItem, lessthan)
   EXPECT_NE(items.find(item3), items.end());
   EXPECT_NE(items.find(item4), items.end());
   EXPECT_EQ(items.find(MooseEnumItem("Edward", 1949)), items.end());
+}
+
+TEST(MooseEnumItem, setID)
+{
+  MooseEnumItem item("LuggageCombo");
+  EXPECT_EQ(item.id(), MooseEnumItem::INVALID_ID);
+
+  item.setID(12345);
+  EXPECT_EQ(item.id(), 12345);
+
+  try
+  {
+    item.setID(54321);
+    FAIL() << "missing expected error";
+  }
+  catch (const std::exception & e)
+  {
+    std::string msg(e.what());
+    ASSERT_NE(msg.find("The ID of a MooseEnumItem can not be changed if it is valid, the item "
+                       "LUGGAGECOMBO has a valid id of 12345."),
+              std::string::npos)
+        << "failed with unexpected error: " << msg;
+  }
 }

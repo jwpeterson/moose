@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "PorousFlowLineSink.h"
 #include "libmesh/utility.h"
@@ -313,7 +315,8 @@ PorousFlowLineSink::jac(unsigned int jvar)
   {
     const Real internal_energy_prime = (_i != _j ? 0.0 : (*_dinternal_energy_dvar)[_i][_ph][pvar]);
     outflowp = (*_internal_energy)[_i][_ph] * outflowp + internal_energy_prime * outflow;
-    outflow *= (*_internal_energy)[_i][_ph];
+    // this multiplication was performed, but the code does not need to know: outflow *=
+    // (*_internal_energy)[_i][_ph];
   }
 
   return outflowp;

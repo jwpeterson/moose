@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "CircleCutUserObject.h"
 
@@ -66,4 +68,23 @@ CircleCutUserObject::isInsideCutPlane(Point p) const
   if (std::abs(ray * _normal) < 1e-15 && std::sqrt(ray.norm_sq()) < _radius)
     return true;
   return false;
+}
+
+const std::vector<Point>
+CircleCutUserObject::getCrackFrontPoints(unsigned int number_crack_front_points) const
+{
+  std::vector<Point> crack_front_points(number_crack_front_points);
+  Point v1 = _vertices[0] - _center;
+  Point v2 = _normal.cross(v1);
+  v1 /= v1.norm();
+  v2 /= v2.norm();
+  // parametric circle in 3D: center + r * cos(theta) * v1 + r * sin(theta) * v2
+  for (unsigned int i = 0; i < number_crack_front_points; ++i)
+  {
+    Real theta = 2.0 * libMesh::pi / number_crack_front_points * i;
+    crack_front_points[i] =
+        _center + _radius * std::cos(theta) * v1 + _radius * std::sin(theta) * v2;
+  }
+
+  return crack_front_points;
 }

@@ -1,28 +1,28 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "TestPostprocessor.h"
+#include "MooseTestAppTypes.h"
+#include "Conversion.h"
 
 template <>
 InputParameters
 validParams<TestPostprocessor>()
 {
   InputParameters params = validParams<GeneralPostprocessor>();
-  MooseEnum test_type("grow use_older_value report_old");
+  MooseEnum test_type("grow use_older_value report_old custom_execute_on");
   params.addRequiredParam<MooseEnum>("test_type", test_type, "The type of test to perform");
   params.addParam<PostprocessorName>("report_name",
                                      "The name of the postprocessor value to report");
+  ExecFlagEnum & exec = params.set<ExecFlagEnum>("execute_on");
+  exec.addAvailableFlags(EXEC_JUST_GO);
+  params.setDocString("execute_on", exec.getDocString());
   return params;
 }
 
@@ -56,6 +56,11 @@ TestPostprocessor::getValue()
   else if (_test_type == "report_old")
     return getPostprocessorValueOld("report_name");
 
+  else if (_test_type == "custom_execute_on")
+  {
+    _console << "Flag Name: " << EXEC_JUST_GO << std::endl;
+    return ++_execute_count;
+  }
   // This should not be attainable
   else
   {

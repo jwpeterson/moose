@@ -1,3 +1,12 @@
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 from __future__ import print_function
 import os
 import re
@@ -24,7 +33,7 @@ def colorText(string, color, **kwargs):
     colored = kwargs.pop('colored', True)
 
     # ANSI color codes for colored terminal output
-    color_codes = dict(RESET='\033[0m', BOLD='\033[1m',RED='\033[31m', MAGENTA='\033[32m', YELLOW='\033[33m', BLUE='\033[34m', GREEN='\033[35m', CYAN='\033[36m')
+    color_codes = dict(RESET='\033[0m', BOLD='\033[1m',RED='\033[31m', MAGENTA='\033[32m', YELLOW='\033[33m', BLUE='\033[34m', GREEN='\033[35m', CYAN='\033[36m', GREY='\033[90m')
     if code:
         color_codes['GREEN'] = '\033[32m'
         color_codes['CYAN']  = '\033[36m'
@@ -220,3 +229,15 @@ def check_file_size(base=os.getcwd(), size=1, ignore=None):
             if result.st_size > size:
                 output.append(FileInfo(name=filename, size=result.st_size/(1024.**2)))
     return output
+
+def camel_to_space(text):
+    """
+    Converts the supplied camel case text to space separated words.
+    """
+    out = []
+    index = 0
+    for match in re.finditer(r'(?<=[a-z])(?=[A-Z])', text):
+        out.append(text[index:match.start(0)])
+        index = match.start(0)
+    out.append(text[index:])
+    return ' '.join(out)

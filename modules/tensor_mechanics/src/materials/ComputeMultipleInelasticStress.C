@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "ComputeMultipleInelasticStress.h"
 
 #include "StressUpdateBase.h"
@@ -109,14 +112,6 @@ ComputeMultipleInelasticStress::initialSetup()
   _is_elasticity_tensor_guaranteed_isotropic =
       hasGuaranteedMaterialProperty(_elasticity_tensor_name, Guarantee::ISOTROPIC);
 
-  _is_elasticity_tensor_guaranteed_constant_in_time =
-      hasGuaranteedMaterialProperty(_elasticity_tensor_name, Guarantee::CONSTANT_IN_TIME);
-  if ((isParamValid("initial_stress")) && !_is_elasticity_tensor_guaranteed_constant_in_time)
-    mooseError("A finite stress material cannot both have an initial stress and an elasticity "
-               "tensor with varying values; please use a defined constant elasticity tensor, "
-               "such as ComputeIsotropicElasticityTensor, if your model defines an initial "
-               "stress, or apply an initial strain instead.");
-
   std::vector<MaterialName> models = getParam<std::vector<MaterialName>>("inelastic_models");
   for (unsigned int i = 0; i < _num_models; ++i)
   {
@@ -154,9 +149,14 @@ ComputeMultipleInelasticStress::computeQpStressIntermediateConfiguration()
 
     // If the elasticity tensor values have changed and the tensor is isotropic,
     // use the old strain to calculate the old stress
-    if (!_is_elasticity_tensor_guaranteed_constant_in_time &&
-        _is_elasticity_tensor_guaranteed_isotropic)
+    if (_is_elasticity_tensor_guaranteed_isotropic || !_perform_finite_strain_rotations)
+    {
       _stress[_qp] = _elasticity_tensor[_qp] * (_elastic_strain_old[_qp] + _strain_increment[_qp]);
+      // InitialStress Deprecation: remove these lines
+      if (_perform_finite_strain_rotations)
+        rotateQpInitialStress();
+      addQpInitialStress();
+    }
     else
       _stress[_qp] = _stress_old[_qp] + _elasticity_tensor[_qp] * _strain_increment[_qp];
 
@@ -227,10 +227,15 @@ ComputeMultipleInelasticStress::updateQpState(RankTwoTensor & elastic_strain_inc
           elastic_strain_increment -= inelastic_strain_increment[j_rmm];
 
       // form the trial stress, with the check for changed elasticity constants
-      if (!_is_elasticity_tensor_guaranteed_constant_in_time &&
-          _is_elasticity_tensor_guaranteed_isotropic)
+      if (_is_elasticity_tensor_guaranteed_isotropic || !_perform_finite_strain_rotations)
+      {
         _stress[_qp] =
             _elasticity_tensor[_qp] * (_elastic_strain_old[_qp] + elastic_strain_increment);
+        // InitialStress Deprecation: remove these lines
+        if (_perform_finite_strain_rotations)
+          rotateQpInitialStress();
+        addQpInitialStress();
+      }
       else
         _stress[_qp] = _stress_old[_qp] + _elasticity_tensor[_qp] * elastic_strain_increment;
 
@@ -303,7 +308,14 @@ ComputeMultipleInelasticStress::updateQpState(RankTwoTensor & elastic_strain_inc
   for (unsigned i_rmm = 0; i_rmm < _num_models; ++i_rmm)
     _matl_timestep_limit[_qp] += 1.0 / _models[i_rmm]->computeTimeStepLimit();
 
-  _matl_timestep_limit[_qp] = 1.0 / _matl_timestep_limit[_qp];
+  if (MooseUtils::absoluteFuzzyEqual(_matl_timestep_limit[_qp], 0.0))
+  {
+    _matl_timestep_limit[_qp] = std::numeric_limits<Real>::max();
+  }
+  else
+  {
+    _matl_timestep_limit[_qp] = 1.0 / _matl_timestep_limit[_qp];
+  }
 }
 
 void
@@ -333,9 +345,14 @@ ComputeMultipleInelasticStress::updateQpStateSingleModel(
 
   // If the elasticity tensor values have changed and the tensor is isotropic,
   // use the old strain to calculate the old stress
-  if (!_is_elasticity_tensor_guaranteed_constant_in_time &&
-      _is_elasticity_tensor_guaranteed_isotropic)
+  if (_is_elasticity_tensor_guaranteed_isotropic || !_perform_finite_strain_rotations)
+  {
     _stress[_qp] = _elasticity_tensor[_qp] * (_elastic_strain_old[_qp] + elastic_strain_increment);
+    // InitialStress Deprecation: remove these lines
+    if (_perform_finite_strain_rotations)
+      rotateQpInitialStress();
+    addQpInitialStress();
+  }
   else
     _stress[_qp] = _stress_old[_qp] + _elasticity_tensor[_qp] * elastic_strain_increment;
 

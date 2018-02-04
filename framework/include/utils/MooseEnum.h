@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MOOSEENUM_H
 #define MOOSEENUM_H
@@ -95,19 +90,21 @@ public:
    */
   bool compareCurrent(const MooseEnum & other, CompareMode mode = CompareMode::COMPARE_NAME) const;
 
+  ///@{
   /**
    * Assignment operators
-   *  TODO: Perhaps we should implement an int assignment operator
-   * @param name - a string representing one of the enumeration values.
+   * @param name/int - a string or int representing one of the enumeration values.
    * @return A reference to this object for chaining
    */
   MooseEnum & operator=(const std::string & name);
+  MooseEnum & operator=(int value);
+  ///@}
 
   /**
    * IsValid
    * @return - a Boolean indicating whether this Enumeration has been set
    */
-  virtual bool isValid() const override { return _current.id() > INVALID_ID; }
+  virtual bool isValid() const override { return _current.id() > MooseEnumItem::INVALID_ID; }
 
   // InputParameters is allowed to create an empty enum but is responsible for
   // filling it in after the fact

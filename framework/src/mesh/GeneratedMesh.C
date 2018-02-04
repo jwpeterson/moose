@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "GeneratedMesh.h"
 
@@ -233,12 +228,9 @@ GeneratedMesh::buildMesh()
     }
 
     // Loop over the nodes and move them to the desired location
-    MeshBase::node_iterator node_it = mesh.nodes_begin();
-    const MeshBase::node_iterator node_end = mesh.nodes_end();
-
-    for (; node_it != node_end; ++node_it)
+    for (auto & node_ptr : mesh.node_ptr_range())
     {
-      Node & node = **node_it;
+      Node & node = *node_ptr;
 
       for (unsigned int dir = 0; dir < LIBMESH_DIM; ++dir)
       {

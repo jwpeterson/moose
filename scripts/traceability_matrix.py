@@ -1,4 +1,12 @@
 #!/usr/bin/env python
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
 
 import re, os, sys, argparse
 from reportlab.lib import colors
@@ -103,7 +111,7 @@ def extractTestedRequirements(args, data):
     from TestHarness import TestHarness
 
     # Build the TestHarness object here
-    harness = TestHarness([], test_app_name, args.moose_dir)
+    harness = TestHarness([], args.moose_dir, test_app_name)
 
     # Tell it to parse the test files only, not run them
     harness.findAndRunTests(find_only=True)

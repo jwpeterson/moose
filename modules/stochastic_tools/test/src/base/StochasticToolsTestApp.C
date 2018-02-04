@@ -1,3 +1,11 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 #include "StochasticToolsTestApp.h"
 #include "StochasticToolsApp.h"
 #include "Moose.h"
@@ -21,6 +29,9 @@ StochasticToolsTestApp::StochasticToolsTestApp(InputParameters parameters) : Moo
 
   Moose::associateSyntax(_syntax, _action_factory);
   StochasticToolsApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  StochasticToolsApp::registerExecFlags(_factory);
 
   bool use_test_objs = getParam<bool>("allow_test_objects");
   if (use_test_objs)
@@ -66,5 +77,16 @@ StochasticToolsTestApp__associateSyntax(Syntax & syntax, ActionFactory & action_
 }
 void
 StochasticToolsTestApp::associateSyntax(Syntax & /*syntax*/, ActionFactory & /*action_factory*/)
+{
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+StochasticToolsTestApp__registerExecFlags(Factory & factory)
+{
+  StochasticToolsTestApp::registerExecFlags(factory);
+}
+void
+StochasticToolsTestApp::registerExecFlags(Factory & /*factory*/)
 {
 }

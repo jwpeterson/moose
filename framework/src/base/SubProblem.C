@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "SubProblem.h"
 #include "Factory.h"
@@ -29,14 +24,25 @@ validParams<SubProblem>()
   return params;
 }
 
-// SubProblem /////
+namespace
+{
+/**
+ * Templated helper that returns either the any block or any boundary ID depending on the template
+ * parameter.
+ */
+template <typename T>
+T getAnyID();
+}
 
+// SubProblem /////
 SubProblem::SubProblem(const InputParameters & parameters)
   : Problem(parameters),
     _factory(_app.getFactory()),
     _nonlocal_cm(),
     _requires_nonlocal_coupling(false),
-    _rz_coord_axis(1) // default to RZ rotation around y-axis
+    _rz_coord_axis(1), // default to RZ rotation around y-axis
+    _currently_computing_jacobian(false),
+    _computing_nonlinear_residual(false)
 {
   unsigned int n_threads = libMesh::n_threads();
   _active_elemental_moose_variables.resize(n_threads);
@@ -351,7 +357,7 @@ SubProblem::checkMatProps(std::map<T, std::set<std::string>> & props,
                           std::map<T, std::set<MaterialPropertyName>> & zero_props)
 {
   // Variable for storing the value for ANY_BLOCK_ID/ANY_BOUNDARY_ID
-  T any_id = mesh().getAnyID<T>();
+  T any_id = getAnyID<T>();
 
   // Variable for storing all available blocks/boundaries from the mesh
   std::set<T> all_ids(mesh().getBlockOrBoundaryIDs<T>());
@@ -417,4 +423,22 @@ void
 SubProblem::registerRecoverableData(std::string name)
 {
   _app.registerRecoverableData(this->name() + "/" + name);
+}
+
+// Anonymous namespace for local helper methods
+namespace
+{
+template <>
+SubdomainID
+getAnyID()
+{
+  return Moose::ANY_BLOCK_ID;
+}
+
+template <>
+BoundaryID
+getAnyID()
+{
+  return Moose::ANY_BOUNDARY_ID;
+}
 }

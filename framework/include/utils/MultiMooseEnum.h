@@ -1,27 +1,24 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MULTIMOOSEENUM_H
 #define MULTIMOOSEENUM_H
 
 // MOOSE includes
+#include "Moose.h"
 #include "MooseEnumBase.h"
 
 // C++ includes
 #include <vector>
 
 // Forward declarations
+class ExecFlagEnum;
 namespace libMesh
 {
 class Parameters;
@@ -128,10 +125,9 @@ public:
 
   /**
    * Indexing operator
-   * Operator to retrieve an item from the MultiMooseEnum. The reference may not be used to change
-   * the item.
+   * Operator to retrieve an item from the MultiMooseEnum.
    * @param i index
-   * @returns a read/read-write reference to the item as an unsigned int.
+   * @returns the id of the MooseEnumItem at the supplied index
    */
   unsigned int get(unsigned int i) const;
 
@@ -171,18 +167,6 @@ protected:
   /// Check whether any of the current values are deprecated when called
   virtual void checkDeprecated() const override;
 
-private:
-  /**
-   * Private constructor for use by libmesh::Parameters
-   */
-  MultiMooseEnum();
-
-  /**
-   * Private constructor that can accept a MooseEnumBase for ::withOptionsFrom()
-   * @param other_enum - MooseEnumBase type to copy names and out-of-range data from
-   */
-  MultiMooseEnum(const MooseEnumBase & other_enum);
-
   /**
    * Helper method for all inserts and assignment operators
    */
@@ -195,8 +179,24 @@ private:
   template <typename InputIterator>
   void remove(InputIterator first, InputIterator last);
 
+  /**
+   * Set the current items.
+   */
+  void setCurrentItems(const std::vector<MooseEnumItem> & current);
+
   /// The current id
   std::vector<MooseEnumItem> _current;
+
+  /**
+   * Protected constructor for use by libmesh::Parameters
+   */
+  MultiMooseEnum();
+
+  /**
+   * Protected constructor that can accept a MooseEnumBase for ::withOptionsFrom()
+   * @param other_enum - MooseEnumBase type to copy names and out-of-range data from
+   */
+  MultiMooseEnum(const MooseEnumBase & other_enum);
 };
 
 #endif // MULTIMOOSEENUM_H

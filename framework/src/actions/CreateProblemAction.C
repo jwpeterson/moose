@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "CreateProblemAction.h"
 #include "Factory.h"
@@ -45,6 +40,12 @@ validParams<CreateProblemAction>()
   params.addParam<bool>("material_coverage_check",
                         true,
                         "Set to false to disable material->subdomain coverage check");
+  params.addParam<bool>("parallel_barrier_messaging",
+                        true,
+                        "Displays messaging from parallel "
+                        "barrier notifications when executing "
+                        "or transferring to/from Multiapps "
+                        "(default: true)");
 
   params.addParam<FileNameNoExtension>("restart_file_base",
                                        "File base name used for restart (e.g. "
@@ -96,6 +97,7 @@ CreateProblemAction::act()
     _problem->useFECache(_fe_cache);
     _problem->setKernelCoverageCheck(getParam<bool>("kernel_coverage_check"));
     _problem->setMaterialCoverageCheck(getParam<bool>("material_coverage_check"));
+    _problem->setParallelBarrierMessaging(getParam<bool>("parallel_barrier_messaging"));
 
     if (isParamValid("restart_file_base"))
     {
@@ -113,7 +115,7 @@ CreateProblemAction::act()
       {
         std::list<std::string> dir_list(1, path);
         std::list<std::string> files = MooseUtils::getFilesInDirs(dir_list);
-        restart_file_base = MooseUtils::getRecoveryFileBase(files);
+        restart_file_base = MooseUtils::getLatestAppCheckpointFileBase(files);
 
         if (restart_file_base == "")
           mooseError("Unable to find suitable restart file");

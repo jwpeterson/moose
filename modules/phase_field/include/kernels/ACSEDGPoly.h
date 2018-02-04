@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef ACSEDGPOLY_H
 #define ACSEDGPOLY_H
 
@@ -11,8 +14,10 @@
 
 /**
  * This kernel adds the contribution of stored energy associated with dislocations to grain growth
- * This allows us to simulate recrystallization.This kernel depends grain_index instead of op_index
- * to take full advantage of Grain Tracker
+ * This allows us to simulate recrystallization. The formulation is based on:
+ * S. Gentry and K. Thornton, IOP Conf. Series: Materials Science and
+ * Engineering 89, 012024, (2015), and other works cited therein.
+ * This kernel depends grain_index instead of op_index to take full advantage of Grain Tracker
  * So a grain_tracker UserObject must be used. If you want use OPs equal to grain_num, you can use
  * the fake grain_tracker UserObject,e.g., FauxGrainTracker
  */

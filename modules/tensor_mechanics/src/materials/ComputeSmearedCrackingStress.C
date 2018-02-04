@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "ComputeSmearedCrackingStress.h"
 #include "ElasticityTensorTools.h"
 #include "StressUpdateBase.h"
@@ -13,7 +16,7 @@ InputParameters
 validParams<ComputeSmearedCrackingStress>()
 {
   InputParameters params = validParams<ComputeMultipleInelasticStress>();
-  params.addClassDescription("Compute stress using elasticity for finite strains");
+  params.addClassDescription("Compute stress using a fixed smeared cracking model");
   params.addParam<std::string>(
       "cracking_release",
       "abrupt",
@@ -51,6 +54,7 @@ validParams<ComputeSmearedCrackingStress>()
       0.0,
       "shear_retention_factor>=0 & shear_retention_factor<=1.0",
       "Fraction of original shear stiffness to be retained after cracking");
+  params.set<std::vector<MaterialName>>("inelastic_models") = {};
 
   return params;
 }
@@ -176,7 +180,11 @@ ComputeSmearedCrackingStress::computeQpStress()
     updateElasticityTensor();
 
     // Calculate stress in intermediate configuration
-    _stress[_qp] = _local_elasticity_tensor * (_elastic_strain_old[_qp] + _strain_increment[_qp]);
+    _stress[_qp] = _local_elasticity_tensor * _elastic_strain[_qp];
+    // InitialStress Deprecation: remove these lines
+    if (_perform_finite_strain_rotations)
+      rotateQpInitialStress();
+    addQpInitialStress();
 
     _Jacobian_mult[_qp] = _local_elasticity_tensor;
     force_elasticity_rotation = true;
@@ -186,7 +194,11 @@ ComputeSmearedCrackingStress::computeQpStress()
   crackingStressRotation();
 
   if (_perform_finite_strain_rotations)
+  {
     finiteStrainRotation(force_elasticity_rotation);
+    _crack_rotation[_qp] =
+        _rotation_increment[_qp] * _crack_rotation[_qp] * _rotation_increment[_qp].transpose();
+  }
 }
 
 void
@@ -211,7 +223,7 @@ ComputeSmearedCrackingStress::updateElasticityTensor()
       // Update elasticity tensor based on crack status of the end of last time step
       if (_crack_flags_old[_qp](i) < 1.0)
       {
-        if (_cracking_neg_fraction == 0 && ePrime(i, i) < 0)
+        if (_cracking_neg_fraction == 0 && MooseUtils::absoluteFuzzyLessThan(ePrime(i, i), 0.0))
           crack_flags_local(i) = 1.0;
         else if (_cracking_neg_fraction > 0 &&
                  ePrime(i, i) < _crack_strain_old[_qp](i) * _cracking_neg_fraction &&
@@ -296,7 +308,7 @@ ComputeSmearedCrackingStress::crackingStressRotation()
       _crack_flags[_qp](i) = _crack_flags_old[_qp](i);
     }
 
-    // Compute crack orientations: updated _crack_rotation[_qp] based on current sstrain
+    // Compute crack orientations: updated _crack_rotation[_qp] based on current strain
     RealVectorValue principal_strain;
     computeCrackStrainAndOrientation(principal_strain);
 

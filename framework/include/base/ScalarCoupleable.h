@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef SCALARCOUPLEABLE_H
 #define SCALARCOUPLEABLE_H
@@ -58,6 +53,9 @@ public:
 protected:
   // Reference to the interface's input parameters
   const InputParameters & _sc_parameters;
+
+  /// The name of the object this interface is part of
+  const std::string & _sc_name;
 
   /**
    * Returns true if a variables has been coupled_as name.
@@ -149,6 +147,18 @@ protected:
   /// Local InputParameters
   const InputParameters & _coupleable_params;
 
+  /// Thread ID of the thread using this object
+  THREAD_ID _sc_tid;
+
+  /// Scalar zero
+  const Real & _real_zero;
+
+  /// Zero value of a scalar variable
+  const VariableValue & _scalar_zero;
+
+  /// Zero point
+  const Point & _point_zero;
+
   /**
    * Helper method to return (and insert if necessary) the default value
    * for an uncoupled variable.
@@ -158,12 +168,23 @@ protected:
   VariableValue * getDefaultValue(const std::string & var_name);
 
   /**
+   * Check that the right kind of variable is being coupled in
+   *
+   * @param var_name The name of the coupled variable
+   */
+  void checkVar(const std::string & var_name);
+
+  /**
    * Extract pointer to a scalar coupled variable
    * @param var_name Name of parameter desired
    * @param comp Component number of multiple coupled variables
    * @return Pointer to the desired variable
    */
   MooseVariableScalar * getScalarVar(const std::string & var_name, unsigned int comp);
+
+private:
+  /// Field variables coupled into this object (for error checking)
+  std::map<std::string, std::vector<MooseVariable *>> _sc_coupled_vars;
 };
 
 #endif // SCALARCOUPLEABLE_H

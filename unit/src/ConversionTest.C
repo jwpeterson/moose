@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "gtest/gtest.h"
 #include <vector>
@@ -18,6 +13,7 @@
 
 // Moose includes
 #include "Conversion.h"
+#include "ExecFlagEnum.h"
 
 TEST(Conversion, stringify)
 {
@@ -44,24 +40,41 @@ TEST(Conversion, stringify)
                              "--STOP--"),
             "Streets,full,of,water--STOP--Please,advise");
 
-  EXPECT_EQ(Moose::stringify(std::vector<ExecFlagType>({EXEC_INITIAL,
-                                                        EXEC_LINEAR,
-                                                        EXEC_NONLINEAR,
-                                                        EXEC_TIMESTEP_END,
-                                                        EXEC_TIMESTEP_BEGIN,
-                                                        EXEC_CUSTOM,
-                                                        EXEC_FINAL,
-                                                        EXEC_FORCED,
-                                                        EXEC_FAILED,
-                                                        EXEC_SUBDOMAIN,
-                                                        EXEC_NONE})),
-            "INITIAL,LINEAR,NONLINEAR,TIMESTEP_END,TIMESTEP_BEGIN,CUSTOM,FINAL,FORCED,FAILED,"
-            "SUBDOMAIN,NONE");
-
   EXPECT_EQ(
       Moose::stringify(std::vector<Moose::SolveType>(
           {Moose::ST_NEWTON, Moose::ST_JFNK, Moose::ST_PJFNK, Moose::ST_FD, Moose::ST_LINEAR})),
       "NEWTON,JFNK,Preconditioned JFNK,FD,Linear");
+}
+
+TEST(Conversion, ExecFlagType)
+{
+  std::vector<ExecFlagType> flags = {EXEC_INITIAL,
+                                     EXEC_LINEAR,
+                                     EXEC_NONLINEAR,
+                                     EXEC_TIMESTEP_END,
+                                     EXEC_TIMESTEP_BEGIN,
+                                     EXEC_CUSTOM,
+                                     EXEC_FINAL,
+                                     EXEC_FORCED,
+                                     EXEC_FAILED,
+                                     EXEC_SUBDOMAIN,
+                                     EXEC_NONE};
+
+  EXPECT_EQ(Moose::stringify(flags, ", "),
+            "INITIAL, LINEAR, NONLINEAR, TIMESTEP_END, TIMESTEP_BEGIN, CUSTOM, FINAL, FORCED, "
+            "FAILED, SUBDOMAIN, NONE");
+
+  EXPECT_EQ(Moose::stringify(EXEC_INITIAL), "INITIAL");
+  EXPECT_EQ(Moose::stringify(EXEC_LINEAR), "LINEAR");
+  EXPECT_EQ(Moose::stringify(EXEC_NONLINEAR), "NONLINEAR");
+  EXPECT_EQ(Moose::stringify(EXEC_TIMESTEP_END), "TIMESTEP_END");
+  EXPECT_EQ(Moose::stringify(EXEC_TIMESTEP_BEGIN), "TIMESTEP_BEGIN");
+  EXPECT_EQ(Moose::stringify(EXEC_CUSTOM), "CUSTOM");
+  EXPECT_EQ(Moose::stringify(EXEC_FINAL), "FINAL");
+  EXPECT_EQ(Moose::stringify(EXEC_FINAL), "FINAL");
+  EXPECT_EQ(Moose::stringify(EXEC_FORCED), "FORCED");
+  EXPECT_EQ(Moose::stringify(EXEC_SUBDOMAIN), "SUBDOMAIN");
+  EXPECT_EQ(Moose::stringify(EXEC_NONE), "NONE");
 }
 
 TEST(Conversion, stringifyExact)

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "Assembly.h"
 
@@ -217,7 +212,7 @@ Assembly::buildNeighborFE(FEType type)
       _fe_neighbor[dim][type] = FEBase::build(dim, type).release();
     _fe_neighbor[dim][type]->get_phi();
     _fe_neighbor[dim][type]->get_dphi();
-    if (_need_second_derivative.find(type) != _need_second_derivative.end())
+    if (_need_second_derivative_neighbor.find(type) != _need_second_derivative_neighbor.end())
       _fe_neighbor[dim][type]->get_d2phi();
   }
 }
@@ -235,7 +230,7 @@ Assembly::buildFaceNeighborFE(FEType type)
       _fe_face_neighbor[dim][type] = FEBase::build(dim, type).release();
     _fe_face_neighbor[dim][type]->get_phi();
     _fe_face_neighbor[dim][type]->get_dphi();
-    if (_need_second_derivative.find(type) != _need_second_derivative.end())
+    if (_need_second_derivative_neighbor.find(type) != _need_second_derivative_neighbor.end())
       _fe_face_neighbor[dim][type]->get_d2phi();
   }
 }
@@ -322,7 +317,7 @@ Assembly::feGradPhiNeighbor(FEType type)
 const VariablePhiSecond &
 Assembly::feSecondPhiNeighbor(FEType type)
 {
-  _need_second_derivative[type] = true;
+  _need_second_derivative_neighbor[type] = true;
   buildNeighborFE(type);
   return _fe_shape_data_neighbor[type]->_second_phi;
 }
@@ -344,7 +339,7 @@ Assembly::feGradPhiFaceNeighbor(FEType type)
 const VariablePhiSecond &
 Assembly::feSecondPhiFaceNeighbor(FEType type)
 {
-  _need_second_derivative[type] = true;
+  _need_second_derivative_neighbor[type] = true;
   buildFaceNeighborFE(type);
   return _fe_shape_data_face_neighbor[type]->_second_phi;
 }
@@ -534,6 +529,9 @@ Assembly::reinitFEFace(const Elem * elem, unsigned int side)
       const_cast<std::vector<Real> &>((*_holder_fe_face_helper[dim])->get_JxW()));
   _current_normals.shallowCopy(
       const_cast<std::vector<Point> &>((*_holder_fe_face_helper[dim])->get_normals()));
+
+  if (_xfem != NULL)
+    modifyFaceWeightsDueToXFEM(elem, side);
 }
 
 void
@@ -556,7 +554,7 @@ Assembly::reinitFEFaceNeighbor(const Elem * neighbor, const std::vector<Point> &
         const_cast<std::vector<std::vector<Real>> &>(fe_face_neighbor->get_phi()));
     fesd->_grad_phi.shallowCopy(
         const_cast<std::vector<std::vector<RealGradient>> &>(fe_face_neighbor->get_dphi()));
-    if (_need_second_derivative.find(fe_type) != _need_second_derivative.end())
+    if (_need_second_derivative_neighbor.find(fe_type) != _need_second_derivative_neighbor.end())
       fesd->_second_phi.shallowCopy(
           const_cast<std::vector<std::vector<RealTensor>> &>(fe_face_neighbor->get_d2phi()));
   }
@@ -581,7 +579,7 @@ Assembly::reinitFENeighbor(const Elem * neighbor, const std::vector<Point> & ref
     fesd->_phi.shallowCopy(const_cast<std::vector<std::vector<Real>> &>(fe_neighbor->get_phi()));
     fesd->_grad_phi.shallowCopy(
         const_cast<std::vector<std::vector<RealGradient>> &>(fe_neighbor->get_dphi()));
-    if (_need_second_derivative.find(fe_type) != _need_second_derivative.end())
+    if (_need_second_derivative_neighbor.find(fe_type) != _need_second_derivative_neighbor.end())
       fesd->_second_phi.shallowCopy(
           const_cast<std::vector<std::vector<RealTensor>> &>(fe_neighbor->get_d2phi()));
   }
@@ -1251,18 +1249,18 @@ Assembly::copyNeighborShapes(unsigned int var)
 {
   MooseVariable & v = _sys.getVariable(_tid, var);
 
-  if (v.usesPhi())
+  if (v.usesPhiNeighbor())
     _phi_face_neighbor.shallowCopy(v.phiFaceNeighbor());
-  if (v.usesGradPhi())
+  if (v.usesGradPhiNeighbor())
     _grad_phi_face_neighbor.shallowCopy(v.gradPhiFaceNeighbor());
-  if (v.usesSecondPhi())
+  if (v.usesSecondPhiNeighbor())
     _second_phi_face_neighbor.shallowCopy(v.secondPhiFaceNeighbor());
 
-  if (v.usesPhi())
+  if (v.usesPhiNeighbor())
     _phi_neighbor.shallowCopy(v.phiNeighbor());
-  if (v.usesGradPhi())
+  if (v.usesGradPhiNeighbor())
     _grad_phi_neighbor.shallowCopy(v.gradPhiNeighbor());
-  if (v.usesSecondPhi())
+  if (v.usesSecondPhiNeighbor())
     _second_phi_neighbor.shallowCopy(v.secondPhiNeighbor());
 }
 
@@ -1980,9 +1978,29 @@ Assembly::modifyWeightsDueToXFEM(const Elem * elem)
     mooseAssert(xfem_weight_multipliers.size() == _current_JxW.size(),
                 "Size of weight multipliers in xfem doesn't match number of quadrature points");
     for (unsigned i = 0; i < xfem_weight_multipliers.size(); i++)
-    {
       _current_JxW[i] = _current_JxW[i] * xfem_weight_multipliers[i];
-    }
+
     xfem_weight_multipliers.release();
+  }
+}
+
+void
+Assembly::modifyFaceWeightsDueToXFEM(const Elem * elem, unsigned int side)
+{
+  mooseAssert(_xfem != NULL, "This function should not be called if xfem is inactive");
+
+  if (_current_qrule_face == _current_qrule_arbitrary)
+    return;
+
+  MooseArray<Real> xfem_face_weight_multipliers;
+  if (_xfem->getXFEMFaceWeights(
+          xfem_face_weight_multipliers, elem, _current_qrule_face, _current_q_points_face, side))
+  {
+    mooseAssert(xfem_face_weight_multipliers.size() == _current_JxW_face.size(),
+                "Size of weight multipliers in xfem doesn't match number of quadrature points");
+    for (unsigned i = 0; i < xfem_face_weight_multipliers.size(); i++)
+      _current_JxW_face[i] = _current_JxW_face[i] * xfem_face_weight_multipliers[i];
+
+    xfem_face_weight_multipliers.release();
   }
 }

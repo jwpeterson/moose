@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #ifndef DOMAININTEGRALACTION_H
 #define DOMAININTEGRALACTION_H
 
@@ -49,6 +52,9 @@ protected:
   std::set<INTEGRAL> _integrals;
   const std::vector<BoundaryName> & _boundary_names;
   std::vector<Point> _crack_front_points;
+  bool _closed_loop;
+  UserObjectName _crack_front_points_provider;
+  bool _use_crack_front_points_provider;
   const std::string _order;
   const std::string _family;
   MooseEnum _direction_method_moose_enum;
@@ -71,9 +77,7 @@ protected:
   Real _poissons_ratio;
   Real _youngs_modulus;
   std::vector<SubdomainName> _blocks;
-  VariableName _disp_x;
-  VariableName _disp_y;
-  VariableName _disp_z;
+  std::vector<VariableName> _displacements;
   VariableName _temp;
   bool _convert_J_to_K;
   bool _has_symmetry_plane;
@@ -84,6 +88,7 @@ protected:
   bool _use_displaced_mesh;
   bool _output_q;
   std::vector<unsigned int> _ring_vec;
+  bool _solid_mechanics;
 };
 
 #endif // DOMAININTEGRALACTION_H

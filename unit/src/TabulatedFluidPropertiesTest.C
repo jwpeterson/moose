@@ -1,18 +1,14 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "TabulatedFluidPropertiesTest.h"
+#include "Utils.h"
 
 // Test data for unordered data
 TEST_F(TabulatedFluidPropertiesTest, unorderedData)
@@ -84,4 +80,18 @@ TEST_F(TabulatedFluidPropertiesTest, missingData)
                                 "by the number of unique temperature values 3");
     ASSERT_TRUE(pos != std::string::npos);
   }
+}
+
+// Test tabulated fluid properties read from file including comments
+TEST_F(TabulatedFluidPropertiesTest, fromFile)
+{
+  Real p = 1.5e6;
+  Real T = 450.0;
+
+  // Read the data file
+  const_cast<TabulatedFluidProperties *>(_tab_fp)->initialSetup();
+
+  REL_TEST("density", _tab_fp->rho(p, T), _co2_fp->rho(p, T), 1.0e-4);
+  REL_TEST("enthalpy", _tab_fp->h(p, T), _co2_fp->h(p, T), 1.0e-4);
+  REL_TEST("internal_energy", _tab_fp->e(p, T), _co2_fp->e(p, T), 1.0e-4);
 }

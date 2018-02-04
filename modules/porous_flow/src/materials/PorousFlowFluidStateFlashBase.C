@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "PorousFlowFluidStateFlashBase.h"
 #include "PorousFlowCapillaryPressure.h"
@@ -16,14 +18,12 @@ validParams<PorousFlowFluidStateFlashBase>()
   params.addRequiredCoupledVar("gas_porepressure",
                                "Variable that is the porepressure of the gas phase");
   params.addRequiredCoupledVar("z", "Total mass fraction of component i summed over all phases");
-  params.addParam<unsigned int>("liquid_phase_number", 0, "The phase number of the liquid phase");
-  params.addParam<unsigned int>(
-      "liquid_fluid_component", 0, "The fluid component number of the liquid phase");
   MooseEnum unit_choice("Kelvin=0 Celsius=1", "Kelvin");
   params.addParam<MooseEnum>(
       "temperature_unit", unit_choice, "The unit of the temperature variable");
   params.addRequiredParam<UserObjectName>("capillary_pressure",
                                           "Name of the UserObject defining the capillary pressure");
+  params.addRequiredParam<UserObjectName>("fluid_state", "Name of the FluidState UserObject");
   params.addClassDescription("Base class for fluid state calculations using persistent primary "
                              "variables and a vapor-liquid flash");
   return params;
@@ -42,10 +42,11 @@ PorousFlowFluidStateFlashBase::PorousFlowFluidStateFlashBase(const InputParamete
 
     _num_z_vars(coupledComponents("z")),
 
-    _aqueous_phase_number(getParam<unsigned int>("liquid_phase_number")),
-    _gas_phase_number(1 - _aqueous_phase_number),
-    _aqueous_fluid_component(getParam<unsigned int>("liquid_fluid_component")),
-    _gas_fluid_component(1 - _aqueous_fluid_component),
+    _fs_base(getUserObject<PorousFlowFluidStateBase>("fluid_state")),
+    _aqueous_phase_number(_fs_base.aqueousPhaseIndex()),
+    _gas_phase_number(_fs_base.gasPhaseIndex()),
+    _aqueous_fluid_component(_fs_base.aqueousComponentIndex()),
+    _gas_fluid_component(_fs_base.gasComponentIndex()),
 
     _temperature(_nodal_material ? getMaterialProperty<Real>("PorousFlow_temperature_nodal")
                                  : getMaterialProperty<Real>("PorousFlow_temperature_qp")),
@@ -85,12 +86,17 @@ PorousFlowFluidStateFlashBase::PorousFlowFluidStateFlashBase(const InputParamete
             : declareProperty<std::vector<std::vector<Real>>>("dPorousFlow_viscosity_qp_dvar")),
 
     _T_c2k(getParam<MooseEnum>("temperature_unit") == 0 ? 0.0 : 273.15),
-    _R(8.3144598),
-    _nr_max_its(42),
-    _nr_tol(1.0e-12),
     _is_initqp(false),
     _pc_uo(getUserObject<PorousFlowCapillaryPressure>("capillary_pressure"))
 {
+  // Only two phases are possible in the fluidstate classes
+  if (_fs_base.numPhases() != _num_phases)
+    mooseError("Only ",
+               _fs_base.numPhases(),
+               " phases are allowed in ",
+               _name,
+               ". Please check the number of phases entered in the dictator is correct");
+
   // Check that the number of total mass fractions provided as primary variables is correct
   if (_num_z_vars != _num_components - 1)
     mooseError("The number of supplied mass fraction variables should be ",
@@ -118,16 +124,7 @@ PorousFlowFluidStateFlashBase::PorousFlowFluidStateFlashBase(const InputParamete
   }
 
   // Set the size of the FluidStateProperties vector
-  _fsp.resize(_num_phases);
-
-  // Set the size of the mass fraction vectors for each phase
-  for (unsigned int ph = 0; ph < _num_phases; ++ph)
-  {
-    _fsp[ph].mass_fraction.resize(_num_components);
-    _fsp[ph].dmass_fraction_dp.resize(_num_components);
-    _fsp[ph].dmass_fraction_dT.resize(_num_components);
-    _fsp[ph].dmass_fraction_dz.resize(_num_components);
-  }
+  _fsp.resize(_num_phases, FluidStateProperties(_num_components));
 }
 
 void
@@ -140,6 +137,8 @@ PorousFlowFluidStateFlashBase::initQpStatefulProperties()
   // Set the size of all other vectors
   setMaterialVectorSize();
 
+  thermophysicalProperties();
+
   // Set the initial values of the properties at the nodes.
   // Note: not required for qp materials as no old values at the qps are requested
   if (_nodal_material)
@@ -150,8 +149,8 @@ PorousFlowFluidStateFlashBase::initQpStatefulProperties()
     {
       _saturation[_qp][ph] = _fsp[ph].saturation;
       _porepressure[_qp][ph] = _fsp[ph].pressure;
-      _fluid_density[_qp][ph] = _fsp[ph].fluid_density;
-      _fluid_viscosity[_qp][ph] = _fsp[ph].fluid_viscosity;
+      _fluid_density[_qp][ph] = _fsp[ph].density;
+      _fluid_viscosity[_qp][ph] = _fsp[ph].viscosity;
       _mass_frac[_qp][ph] = _fsp[ph].mass_fraction;
     }
   }
@@ -174,8 +173,8 @@ PorousFlowFluidStateFlashBase::computeQpProperties()
   {
     _saturation[_qp][ph] = _fsp[ph].saturation;
     _porepressure[_qp][ph] = _fsp[ph].pressure;
-    _fluid_density[_qp][ph] = _fsp[ph].fluid_density;
-    _fluid_viscosity[_qp][ph] = _fsp[ph].fluid_viscosity;
+    _fluid_density[_qp][ph] = _fsp[ph].density;
+    _fluid_viscosity[_qp][ph] = _fsp[ph].viscosity;
     _mass_frac[_qp][ph] = _fsp[ph].mass_fraction;
   }
 
@@ -199,9 +198,12 @@ PorousFlowFluidStateFlashBase::computeQpProperties()
     }
 
     if (!_nodal_material)
+    {
+      (*_dgradp_qp_dgradv)[_qp][_aqueous_phase_number][_pvar] +=
+          -dpc * _dsaturation_dvar[_qp][_aqueous_phase_number][_pvar];
       (*_dgradp_qp_dgradv)[_qp][_aqueous_phase_number][_zvar[0]] =
-          -dpc * _fsp[_aqueous_phase_number].dsaturation_dp -
-          dpc * _fsp[_aqueous_phase_number].dsaturation_dz;
+          -dpc * _dsaturation_dvar[_qp][_aqueous_phase_number][_zvar[0]];
+    }
 
     // The aqueous phase porepressure is also a function of liquid saturation,
     // which depends on both gas porepressure and z
@@ -224,27 +226,27 @@ PorousFlowFluidStateFlashBase::computeQpProperties()
     for (unsigned int ph = 0; ph < _num_phases; ++ph)
     {
       // Derivative of density in each phase
-      _dfluid_density_dvar[_qp][ph][v] =
-          _fsp[ph].dfluid_density_dp * _dporepressure_dvar[_qp][ph][v];
-      _dfluid_density_dvar[_qp][ph][v] += _fsp[ph].dfluid_density_dT * _dtemperature_dvar[_qp][v];
-      _dfluid_density_dvar[_qp][ph][v] += _fsp[ph].dfluid_density_dz * dz_dvar[v];
+      _dfluid_density_dvar[_qp][ph][v] = _fsp[ph].ddensity_dp * _dporepressure_dvar[_qp][ph][v];
+      _dfluid_density_dvar[_qp][ph][v] += _fsp[ph].ddensity_dT * _dtemperature_dvar[_qp][v];
+      _dfluid_density_dvar[_qp][ph][v] += _fsp[ph].ddensity_dz * dz_dvar[v];
 
       // Derivative of viscosity in each phase
-      _dfluid_viscosity_dvar[_qp][ph][v] =
-          _fsp[ph].dfluid_viscosity_dp * _dporepressure_dvar[_qp][ph][v];
-      _dfluid_viscosity_dvar[_qp][ph][v] +=
-          _fsp[ph].dfluid_viscosity_dT * _dtemperature_dvar[_qp][v];
-      _dfluid_viscosity_dvar[_qp][ph][v] += _fsp[ph].dfluid_viscosity_dz * dz_dvar[v];
+      _dfluid_viscosity_dvar[_qp][ph][v] = _fsp[ph].dviscosity_dp * _dporepressure_dvar[_qp][ph][v];
+      _dfluid_viscosity_dvar[_qp][ph][v] += _fsp[ph].dviscosity_dT * _dtemperature_dvar[_qp][v];
+      _dfluid_viscosity_dvar[_qp][ph][v] += _fsp[ph].dviscosity_dz * dz_dvar[v];
+    }
+  }
 
-      // The derivative of the mass fractions for each fluid component in each phase
-      for (unsigned int comp = 0; comp < _num_components; ++comp)
-      {
-        _dmass_frac_dvar[_qp][ph][comp][v] =
-            _fsp[ph].dmass_fraction_dp[comp] * _dporepressure_dvar[_qp][ph][v];
-        _dmass_frac_dvar[_qp][ph][comp][v] +=
-            _fsp[ph].dmass_fraction_dT[comp] * _dtemperature_dvar[_qp][v];
-        _dmass_frac_dvar[_qp][ph][comp][v] += _fsp[ph].dmass_fraction_dz[comp] * dz_dvar[v];
-      }
+  // The derivative of the mass fractions for each fluid component in each phase.
+  // Note: these are all calculated in terms of gas pressuse, so there is no
+  // capillary pressure effect, and hence no need to multiply by _dporepressure_dvar
+  for (unsigned int ph = 0; ph < _num_phases; ++ph)
+  {
+    for (unsigned int comp = 0; comp < _num_components; ++comp)
+    {
+      _dmass_frac_dvar[_qp][ph][comp][_pvar] = _fsp[ph].dmass_fraction_dp[comp];
+      _dmass_frac_dvar[_qp][ph][comp][_zvar[0]] =
+          _fsp[ph].dmass_fraction_dz[comp] * dz_dvar[_zvar[0]];
     }
   }
 
@@ -257,17 +259,21 @@ PorousFlowFluidStateFlashBase::computeQpProperties()
     // Second derivative of capillary pressure
     Real d2pc = _pc_uo.d2CapillaryPressure(_fsp[_aqueous_phase_number].saturation);
 
-    (*_grads_qp)[_qp][_gas_phase_number] =
-        _dsaturation_dvar[_qp][_gas_phase_number][_pvar] * _gas_gradp_qp[_qp] +
-        _dsaturation_dvar[_qp][_gas_phase_number][_zvar[0]] * (*_gradz_qp[0])[_qp];
-    (*_grads_qp)[_qp][_aqueous_phase_number] = -(*_grads_qp)[_qp][_gas_phase_number];
+    (*_grads_qp)[_qp][_aqueous_phase_number] =
+        _dsaturation_dvar[_qp][_aqueous_phase_number][_pvar] * _gas_gradp_qp[_qp] +
+        _dsaturation_dvar[_qp][_aqueous_phase_number][_zvar[0]] * (*_gradz_qp[0])[_qp];
+    (*_grads_qp)[_qp][_gas_phase_number] = -(*_grads_qp)[_qp][_aqueous_phase_number];
 
     (*_gradp_qp)[_qp][_gas_phase_number] = _gas_gradp_qp[_qp];
     (*_gradp_qp)[_qp][_aqueous_phase_number] =
         _gas_gradp_qp[_qp] - dpc * (*_grads_qp)[_qp][_aqueous_phase_number];
 
+    (*_dgradp_qp_dv)[_qp][_aqueous_phase_number][_pvar] =
+        -d2pc * (*_grads_qp)[_qp][_aqueous_phase_number] *
+        _dsaturation_dvar[_qp][_aqueous_phase_number][_pvar];
     (*_dgradp_qp_dv)[_qp][_aqueous_phase_number][_zvar[0]] =
-        -d2pc * (*_grads_qp)[_qp][_aqueous_phase_number];
+        -d2pc * (*_grads_qp)[_qp][_aqueous_phase_number] *
+        _dsaturation_dvar[_qp][_aqueous_phase_number][_zvar[0]];
 
     (*_grad_mass_frac_qp)[_qp][_aqueous_phase_number][_aqueous_fluid_component] =
         _fsp[_aqueous_phase_number].dmass_fraction_dp[_aqueous_fluid_component] *
@@ -314,83 +320,4 @@ PorousFlowFluidStateFlashBase::setMaterialVectorSize() const
         (*_grad_mass_frac_qp)[_qp][ph].assign(_num_components, RealGradient());
     }
   }
-}
-
-Real
-PorousFlowFluidStateFlashBase::rachfordRice(Real x, std::vector<Real> & Ki) const
-{
-  // Check that the size of the equilibrium constant vector is correct
-  if (Ki.size() != _num_components)
-    mooseError("The number of equilibrium components passed to rachfordRice is not correct");
-
-  Real f = 0.0;
-  Real z_total = 0.0;
-
-  for (unsigned int i = 0; i < _num_z_vars; ++i)
-  {
-    f += (*_z[i])[_qp] * (Ki[i] - 1.0) / (1.0 + x * (Ki[i] - 1.0));
-    z_total += (*_z[i])[_qp];
-  }
-
-  // Add the last component (with total mass fraction = 1 - z_total)
-  f += (1.0 - z_total) * (Ki[_num_z_vars] - 1.0) / (1.0 + x * (Ki[_num_z_vars] - 1.0));
-
-  return f;
-}
-
-Real
-PorousFlowFluidStateFlashBase::rachfordRiceDeriv(Real x, std::vector<Real> & Ki) const
-{
-  // Check that the size of the equilibrium constant vector is correct
-  if (Ki.size() != _num_components)
-    mooseError("The number of equilibrium components passed to rachfordRiceDeriv is not correct");
-
-  Real df = 0.0;
-  Real z_total = 0.0;
-
-  for (unsigned int i = 0; i < _num_z_vars; ++i)
-  {
-    df -= (*_z[i])[_qp] * (Ki[i] - 1.0) * (Ki[i] - 1.0) / (1.0 + x * (Ki[i] - 1.0)) /
-          (1.0 + x * (Ki[i] - 1.0));
-    z_total += (*_z[i])[_qp];
-  }
-
-  // Add the last component (with total mass fraction = 1 - z_total)
-  df -= (1.0 - z_total) * (Ki[_num_z_vars] - 1.0) * (Ki[_num_z_vars] - 1.0) /
-        (1.0 + x * (Ki[_num_z_vars] - 1.0)) / (1.0 + x * (Ki[_num_z_vars] - 1.0));
-
-  return df;
-}
-
-Real
-PorousFlowFluidStateFlashBase::vaporMassFraction(std::vector<Real> & Ki) const
-{
-  // Check that the size of the equilibrium constant vector is correct
-  if (Ki.size() != _num_components)
-    mooseError("The number of equilibrium components passed to vaporMassFraction is not correct");
-
-  Real v;
-
-  // If there are only two components, an analytical solution is possible
-  if (_num_components == 2)
-    v = ((*_z[0])[_qp] * (Ki[1] - Ki[0]) - (Ki[1] - 1.0)) / ((Ki[0] - 1.0) * (Ki[1] - 1.0));
-  else
-  {
-    // More than two components - solve the Rachford-Rice equation using
-    // Newton-Raphson method.
-    // Initial guess for vapor mass fraction
-    Real v0 = 0.5;
-    unsigned int iter = 0;
-
-    while (std::abs(rachfordRice(v0, Ki)) > _nr_tol)
-    {
-      v0 = v0 - rachfordRice(v0, Ki) / rachfordRiceDeriv(v0, Ki);
-      iter++;
-
-      if (iter > _nr_max_its)
-        break;
-    }
-    v = v0;
-  }
-  return v;
 }

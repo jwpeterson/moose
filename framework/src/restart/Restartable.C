@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "InputParameters.h"
 #include "Restartable.h"
@@ -25,13 +20,14 @@ Restartable::Restartable(const InputParameters & parameters,
     _restartable_system_name(system_name),
     _restartable_tid(parameters.isParamValid("_tid") ? parameters.get<THREAD_ID>("_tid") : 0)
 {
-  _restartable_subproblem = parameters.isParamValid("_subproblem")
-                                ? parameters.get<SubProblem *>("_subproblem")
-                                : (parameters.isParamValid("_fe_problem_base")
-                                       ? parameters.get<FEProblemBase *>("_fe_problem_base")
-                                       : (parameters.isParamValid("_fe_problem")
-                                              ? parameters.get<FEProblem *>("_fe_problem")
-                                              : subproblem));
+  _restartable_subproblem =
+      parameters.isParamValid("_subproblem")
+          ? parameters.getCheckedPointerParam<SubProblem *>("_subproblem")
+          : (parameters.isParamValid("_fe_problem_base")
+                 ? parameters.getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")
+                 : (parameters.isParamValid("_fe_problem")
+                        ? parameters.getCheckedPointerParam<FEProblem *>("_fe_problem")
+                        : subproblem));
 }
 
 Restartable::Restartable(const std::string & name,

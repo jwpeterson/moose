@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "NodalAreaAction.h"
 
 #include "Factory.h"
@@ -37,7 +40,7 @@ NodalAreaAction::act()
   _moose_object_pars.set<std::vector<VariableName>>("variable") = {"nodal_area_" + _name};
 
   mooseAssert(_problem, "Problem pointer is NULL");
-  _moose_object_pars.set<MultiMooseEnum>("execute_on") = "initial timestep_begin";
+  _moose_object_pars.set<ExecFlagEnum>("execute_on", true) = {EXEC_INITIAL, EXEC_TIMESTEP_BEGIN};
   _moose_object_pars.set<bool>("use_displaced_mesh") = true;
 
   _problem->addUserObject(

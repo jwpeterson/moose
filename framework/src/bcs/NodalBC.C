@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "NodalBC.h"
 
@@ -56,9 +51,10 @@ NodalBC::NodalBC(const InputParameters & parameters)
     MooseVariable * var = &_subproblem.getVariable(_tid, _save_in_strings[i]);
 
     if (var->feType() != _var.feType())
-      mooseError("Error in " + name() + ". When saving residual values in an Auxiliary variable "
-                                        "the AuxVariable must be the same type as the nonlinear "
-                                        "variable the object is acting on.");
+      paramError(
+          "save_in",
+          "saved-in auxiliary variable is incompatible with the object's nonlinear variable: ",
+          moose::internal::incompatVarMsg(*var, _var));
 
     _save_in[i] = var;
     var->sys().addVariableToZeroOnResidual(_save_in_strings[i]);
@@ -72,9 +68,10 @@ NodalBC::NodalBC(const InputParameters & parameters)
     MooseVariable * var = &_subproblem.getVariable(_tid, _diag_save_in_strings[i]);
 
     if (var->feType() != _var.feType())
-      mooseError("Error in " + name() + ". When saving diagonal Jacobian values in an Auxiliary "
-                                        "variable the AuxVariable must be the same type as the "
-                                        "nonlinear variable the object is acting on.");
+      paramError(
+          "diag_save_in",
+          "saved-in auxiliary variable is incompatible with the object's nonlinear variable: ",
+          moose::internal::incompatVarMsg(*var, _var));
 
     _diag_save_in[i] = var;
     var->sys().addVariableToZeroOnJacobian(_diag_save_in_strings[i]);

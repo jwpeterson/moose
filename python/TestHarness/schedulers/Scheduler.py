@@ -1,7 +1,16 @@
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 from time import sleep
 from FactorySystem.MooseObject import MooseObject
 from Job import Job
-import os
+import os, traceback
 from contrib import dag
 from timeit import default_timer as clock
 
@@ -89,6 +98,9 @@ class Scheduler(MooseObject):
         # iterate over and kill any subprocesses
         self.tester_datas = set([])
 
+        # Allow threads to set an exception state
+        self.error_state = False
+
     def killRemaining(self):
         """
         Method to kill any running subprocess started by the Scheduler. This also
@@ -102,16 +114,41 @@ class Scheduler(MooseObject):
             tester_data.killProcess()
         self.job_queue_count = 0
 
+    def schedulerError(self):
+        """
+        If any runWorker, statusWorker threads caused an exception, this method
+        will admit to it.
+        """
+        return self.error_state
+
+    def reportSkipped(self, jobs):
+        """
+        Allow derived schedulers to do something with skipped jobs
+        """
+        return
+
+    def preLaunch(self, job_dag):
+        """
+        Allow derived schedulers to modify the DAG before jobs are launched
+        """
+        return
+
     def run(self, job_container):
         """ Call derived run method """
         return
 
     def postRun(self, job_container):
-        """ Call derived postRun method """
+        """
+        Allow derived schdulers to perform post run methods on job
+        """
         return
 
     def cleanUp(self):
         """ Allow derived schedulers to perform cleanup operations """
+        return
+
+    def notifyFinishedSchedulers(self):
+        """ Notify derived schedulers we are finished """
         return
 
     def skipPrereqs(self):
@@ -132,14 +169,16 @@ class Scheduler(MooseObject):
             tester = job_container.getTester()
             job_dag = job_container.getDAG()
             if (tester.isFinished() and not tester.didPass() and not tester.isSilent() and not self.skipPrereqs()) \
-                or (self.options.dry_run and not tester.isSilent()):
+               and not tester.isQueued() \
+               or (self.options.dry_run and not tester.isSilent()):
 
                 # Ask the DAG to delete and return the downstream jobs associated with this job
                 failed_job_containers.update(job_dag.delete_downstreams(job_container))
 
             for failed_job in failed_job_containers:
-                tester = failed_job.getTester()
-                tester.setStatus('skipped dependency', tester.bucket_skip)
+                failed_tester = failed_job.getTester()
+                failed_tester.addCaveats('skipped dependency')
+                failed_tester.setStatus(failed_tester.bucket_skip.status, failed_tester.bucket_skip)
 
         return failed_job_containers
 
@@ -181,7 +220,12 @@ class Scheduler(MooseObject):
                 # Skipped Dependencies
                 except dag.DAGEdgeIndError:
                     if not self.skipPrereqs():
-                        tester.setStatus('skipped dependency', tester.bucket_skip)
+                        if self.options.reg_exp:
+                            tester.addCaveats('dependency does not match re')
+                            tester.setStatus(tester.bucket_skip.status, tester.bucket_skip)
+                        else:
+                            tester.addCaveats('skipped dependency')
+                            tester.setStatus(tester.bucket_skip.status, tester.bucket_skip)
                         failed_or_skipped_testers.add(tester)
 
                     # Add the parent node / dependency edge to create a functional DAG now that we have caught
@@ -235,9 +279,9 @@ class Scheduler(MooseObject):
 
                     # Fail this concurrent group of testers
                     for this_job in concurrent_jobs:
-                        tester = this_job.getTester()
-                        tester.setStatus('OUTFILE RACE CONDITION', tester.bucket_fail)
-                        failed_or_skipped_testers.add(tester)
+                        failed_tester = this_job.getTester()
+                        failed_tester.setStatus('OUTFILE RACE CONDITION', tester.bucket_fail)
+                        failed_or_skipped_testers.add(failed_tester)
 
                     # collisions detected, move on to the next set
                     break
@@ -256,7 +300,7 @@ class Scheduler(MooseObject):
         """
         # If any threads caused an exception, we have already closed down the queue and need to
         # not schedule any more jobs
-        if self.run_pool._state:
+        if self.run_pool._state or self.error_state:
             return
 
         # Instance the DAG class so we can share it amongst all the Job containers
@@ -272,8 +316,13 @@ class Scheduler(MooseObject):
         # Create a local dictionary of tester names to job containers. Add this dictionary to a
         # set. We will use this set as a way to gain access to their methods.
         for tester in testers:
-            name_to_job_container[tester.getTestName()] = Job(tester, job_dag, self.options)
-            self.tester_datas.add(name_to_job_container[tester.getTestName()])
+            if tester.getTestName() in name_to_job_container:
+                tester.addCaveats('duplicate test')
+                tester.setStatus(tester.bucket_skip.status, tester.bucket_skip)
+                non_runnable_jobs.add(Job(tester, job_dag, self.options))
+            else:
+                name_to_job_container[tester.getTestName()] = Job(tester, job_dag, self.options)
+                self.tester_datas.add(name_to_job_container[tester.getTestName()])
 
         # Populate job_dag with testers. This method will also return any testers which caused failures
         # while building the DAG.
@@ -297,12 +346,16 @@ class Scheduler(MooseObject):
         if len(non_runnable_jobs) + runnable_jobs != len(testers):
             raise SchedulerError('Runnable tests in addition to Skipped tests does not match total scheduled test count!')
 
+        # Inform derived schedulers of the jobs we are skipping immediately
+        self.reportSkipped(non_runnable_jobs)
+
         # Assign a status thread to begin work on any skipped/failed jobs
         self.queueJobs(status_jobs=non_runnable_jobs)
 
-        # Set original DAG state now, before we launch any jobs
-        for job_container in job_dag.topological_sort():
-            job_container.setOriginalDAG()
+        # Allow derived schedulers to modify the dag before we launch
+        # TODO: We don't like this, and this will change when we move to better DAG handling.
+        if runnable_jobs:
+            self.preLaunch(job_dag)
 
         # Build our list of runnable jobs and set the tester's status to queued
         job_list = []
@@ -327,6 +380,10 @@ class Scheduler(MooseObject):
         the Tester pool first, and then we do the same to the Status pool.
         """
         while self.job_queue_count > 0:
+            # One of our children died :( so exit uncleanly
+            if self.error_state:
+                self.killRemaining()
+                return
             sleep(0.5)
 
         self.run_pool.close()
@@ -334,12 +391,20 @@ class Scheduler(MooseObject):
         self.status_pool.close()
         self.status_pool.join()
 
+        # Notify derived schedulers we are exiting
+        self.notifyFinishedSchedulers()
+
     def handleLongRunningJobs(self, job_container):
         """ Handle jobs that have not reported in alotted time """
         if job_container not in self.jobs_reported:
-            tester = job_container.getTester()
-            tester.setStatus('RUNNING...', tester.bucket_pending)
-            self.queueJobs(status_jobs=[job_container])
+            report = False
+            with self.dag_lock:
+                tester = job_container.getTester()
+                if not tester.isFinished():
+                    report = True
+                    tester.setStatus('RUNNING...', tester.bucket_pending)
+            if report:
+                self.queueJobs(status_jobs=[job_container])
 
             # Restart the reporting timer for this job
             job_container.report_timer = threading.Timer(float(tester.getMinReportTime()),
@@ -371,7 +436,7 @@ class Scheduler(MooseObject):
     def reserveSlots(self, job_container):
         """
         Method which allocates resources to perform the job. Returns bool if job
-        should be allowed to run.
+        should be allowed to run based on available resources.
         """
         tester = job_container.getTester()
 
@@ -381,23 +446,22 @@ class Scheduler(MooseObject):
 
         with self.slot_lock:
             can_run = False
-            if self.slots_in_use + tester.getProcs(self.options) <= self.available_slots:
+            if self.slots_in_use + job_container.getSlots() <= self.available_slots:
                 can_run = True
 
             # Check for insufficient slots -soft limit
-            # TODO: Create a unit test for this case
-            elif tester.getProcs(self.options) > self.available_slots and self.soft_limit:
-                tester.specs.addParam('caveats', ['OVERSIZED'], "")
+            elif job_container.getSlots() > self.available_slots and self.soft_limit:
+                tester.addCaveats('OVERSIZED')
                 can_run = True
 
             # Check for insufficient slots -hard limit (skip this job)
             # TODO: Create a unit test for this case
-            elif tester.getProcs(self.options) > self.available_slots and not self.soft_limit:
-                tester.setStatus('insufficient slots', tester.bucket_skip)
-                can_run = False
+            elif job_container.getSlots() > self.available_slots and not self.soft_limit:
+                tester.addCaveats('insufficient slots')
+                tester.setStatus(tester.bucket_skip.status, tester.bucket_skip)
 
             if can_run:
-                self.slots_in_use += tester.getProcs(self.options)
+                self.slots_in_use += job_container.getSlots()
 
         return can_run
 
@@ -435,11 +499,11 @@ class Scheduler(MooseObject):
 
         """
         for job_container in run_jobs:
-            if not self.run_pool._state:
+            if not self.error_state or not self.error_state:
                 self.run_pool.apply_async(self.runWorker, (job_container,))
 
         for job_container in status_jobs:
-            if not self.status_pool._state:
+            if not self.status_pool._state or not self.error_state:
                 self.status_pool.apply_async(self.statusWorker, (job_container,))
 
     def statusWorker(self, job_container):
@@ -456,7 +520,7 @@ class Scheduler(MooseObject):
                     self.harness.handleTestStatus(job_container)
 
                     # ...And then set the finished caveat now that the running status has printed
-                    tester.specs.addParam('caveats', ['FINISHED'], "")
+                    tester.addCaveats('FINISHED')
 
                     # Add this job to the reported container so it does not happen again
                     self.jobs_reported.add(job_container)
@@ -481,9 +545,9 @@ class Scheduler(MooseObject):
             if not tester.isSilent() or not tester.isDeleted():
                 self.last_reported = clock()
 
-        except Exception as e:
-            print('statusWorker Exception: %s' % (e))
-            self.killRemaining()
+        except Exception:
+            self.error_state = True
+            print('statusWorker Exception: %s' % (traceback.format_exc()))
 
     def runWorker(self, job_container):
         """ Method the run_pool calls when an available thread becomes ready """
@@ -508,9 +572,6 @@ class Scheduler(MooseObject):
                 # Call the derived run method (blocking)
                 self.run(job_container)
 
-                # Allow derived schedulers to perform post run operations
-                self.postRun(job_container)
-
                 # Stop timers now that the job has finished on its own
                 job_container.report_timer.cancel()
                 timeout_timer.cancel()
@@ -533,9 +594,12 @@ class Scheduler(MooseObject):
                 # Get next job list
                 next_job_group = self.getNextJobGroup(job_dag)
 
+                # Allow derived schedulers to perform post run operations
+                self.postRun(job_container)
+
                 # Recover worker count before attempting to queue more jobs
                 with self.slot_lock:
-                    self.slots_in_use = max(0, self.slots_in_use - tester.getProcs(self.options))
+                    self.slots_in_use = max(0, self.slots_in_use - job_container.getSlots())
 
                 # Queue this new batch of runnable jobs
                 self.queueJobs(run_jobs=next_job_group)
@@ -553,6 +617,6 @@ class Scheduler(MooseObject):
                     self.queueJobs(run_jobs=[job_container])
                     sleep(0.3)
 
-        except Exception as e:
-            print('runWorker Exception: %s' % (e))
-            self.killRemaining()
+        except Exception:
+            self.error_state = True
+            print('runWorker Exception: %s' % (traceback.format_exc()))

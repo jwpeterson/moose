@@ -1,3 +1,12 @@
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 import re, os, time
 from Tester import Tester
 from TestHarness import util
@@ -64,11 +73,13 @@ class RunApp(Tester):
     def checkRunnable(self, options):
         if options.enable_recover:
             if self.specs.isValid('expect_out') or self.specs.isValid('absent_out') or self.specs['should_crash'] == True:
-                self.setStatus('expect_out RECOVER', self.bucket_skip)
+                self.addCaveats('expect_out RECOVER')
+                self.setStatus(self.bucket_skip.status, self.bucket_skip)
                 return False
 
         if self.specs.isValid('executable_pattern') and re.search(self.specs['executable_pattern'], self.specs['executable']) == None:
-            self.setStatus('EXECUTABLE PATTERN', self.bucket_skip)
+            self.addCaveats('EXECUTABLE PATTERN')
+            self.setStatus(self.bucket_skip.status, self.bucket_skip)
             return False
 
         return True
@@ -167,8 +178,7 @@ class RunApp(Tester):
         elif ncpus < default_ncpus:
             caveats.append('max_cpus=' + str(ncpus))
 
-        if len(caveats) > 0:
-            self.specs['caveats'] = caveats
+        self.addCaveats(*caveats)
 
         if self.force_mpi or options.parallel or ncpus > 1 or nthreads > 1:
             command = self.mpi_command + ' -n ' + str(ncpus) + ' ' + specs['executable'] + ' --n-threads=' + str(nthreads) + ' ' + specs['input_switch'] + ' ' + specs['input'] + ' ' +  ' '.join(cli_args)
@@ -184,17 +194,23 @@ class RunApp(Tester):
         reason = ''
         specs = self.specs
         if specs.isValid('expect_out'):
+            mode = ""
             if specs['match_literal']:
                 have_expected_out = util.checkOutputForLiteral(output, specs['expect_out'])
+                mode = 'literal'
             else:
                 have_expected_out = util.checkOutputForPattern(output, specs['expect_out'])
+                mode = 'pattern'
+
             if (not have_expected_out):
                 reason = 'EXPECTED OUTPUT MISSING'
+                output += "#"*80 + "\n\nUnable to match the following " + mode + " against the program's output:\n\n" + specs['expect_out'] + "\n"
 
         if reason == '' and specs.isValid('absent_out'):
             have_absent_out = util.checkOutputForPattern(output, specs['absent_out'])
             if (have_absent_out):
                 reason = 'OUTPUT NOT ABSENT'
+                output += "#"*80 + "\n\nMatched the following pattern, which we did NOT expect:\n\n" + specs['absent_out'] + "\n"
 
         if reason == '':
             # We won't pay attention to the ERROR strings if EXPECT_ERR is set (from the derived class)

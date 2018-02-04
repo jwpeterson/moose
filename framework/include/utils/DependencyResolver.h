@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef DEPENDENCYRESOLVER_H
 #define DEPENDENCYRESOLVER_H
@@ -73,6 +68,11 @@ public:
    * Add an independent item to the set
    */
   void addItem(const T & value);
+
+  /**
+   * Clear Items from the resolver
+   */
+  void clear();
 
   /**
    * Returns a vector of sets that represent dependency resolved values.  Items in the same
@@ -215,6 +215,17 @@ DependencyResolver<T>::addItem(const T & value)
   _independent_items.push_back(value);
   if (std::find(_ordering_vector.begin(), _ordering_vector.end(), value) == _ordering_vector.end())
     _ordering_vector.push_back(value);
+}
+
+template <typename T>
+void
+DependencyResolver<T>::clear()
+{
+  _depends.clear();
+  _independent_items.clear();
+  _ordering_vector.clear();
+  _ordered_items.clear();
+  _ordered_items_vector.clear();
 }
 
 template <typename T>

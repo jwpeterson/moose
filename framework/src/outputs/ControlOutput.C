@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // Moose includes
 #include "ControlOutput.h"
@@ -25,7 +20,7 @@ validParams<ControlOutput>()
 {
   // Get the base class parameters
   InputParameters params = validParams<Output>();
-  params.set<MultiMooseEnum>("execute_on") = "initial timestep_begin";
+  params.set<ExecFlagEnum>("execute_on", true) = {EXEC_INITIAL, EXEC_TIMESTEP_BEGIN};
   params.addParam<bool>(
       "clear_after_output", true, "Clear the active control display after each output.");
   params.addParam<bool>("show_active_objects", true, "List active MooseObjects.");
@@ -44,14 +39,10 @@ ControlOutput::ControlOutput(const InputParameters & parameters)
 void
 ControlOutput::output(const ExecFlagType & type)
 {
-  switch (type)
-  {
-    case EXEC_INITIAL:
-      outputControls();
-      break;
-    default:
-      outputChangedControls();
-  }
+  if (type == EXEC_INITIAL)
+    outputControls();
+  else
+    outputChangedControls();
 
   if (_show_active_objects)
     outputActiveObjects();

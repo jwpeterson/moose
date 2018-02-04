@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "TransientMultiApp.h"
@@ -181,8 +176,9 @@ TransientMultiApp::solveStep(Real dt, Real target_time, bool auto_advance)
       // The App might have a different local time from the rest of the problem
       Real app_time_offset = _apps[i]->getGlobalTimeOffset();
 
-      if ((ex->getTime() + app_time_offset) + 2e-14 >=
-          target_time) // Maybe this MultiApp was already solved
+      // Maybe this MultiApp was already solved
+      if ((ex->getTime() + app_time_offset + 2e-14 >= target_time) ||
+          (ex->getTime() >= ex->endTime()))
         continue;
 
       if (_sub_cycling)
@@ -369,12 +365,13 @@ TransientMultiApp::solveStep(Real dt, Real target_time, bool auto_advance)
 
               while (!caught_up && catch_up_step < _max_catch_up_steps)
               {
-                Moose::err << "Solving " << name() << "catch up step " << catch_up_step
+                Moose::err << "Solving " << name() << " catch up step " << catch_up_step
                            << std::endl;
                 ex->incrementStepOrReject();
 
                 ex->computeDT();
                 ex->takeStep(catch_up_dt); // Cut the timestep in half to try two half-step solves
+                ex->endStep();
 
                 if (ex->lastSolveConverged())
                 {
@@ -389,7 +386,6 @@ TransientMultiApp::solveStep(Real dt, Real target_time, bool auto_advance)
                 else
                   catch_up_dt /= 2.0;
 
-                ex->endStep();
                 ex->postStep();
 
                 catch_up_step++;

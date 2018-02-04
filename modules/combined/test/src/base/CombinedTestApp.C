@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "CombinedTestApp.h"
 #include "CombinedApp.h"
@@ -45,11 +47,15 @@ CombinedTestApp::CombinedTestApp(const InputParameters & parameters) : MooseApp(
   Moose::associateSyntax(_syntax, _action_factory);
   CombinedApp::associateSyntax(_syntax, _action_factory);
 
+  Moose::registerExecFlags(_factory);
+  CombinedApp::registerExecFlags(_factory);
+
   bool use_test_objs = getParam<bool>("allow_test_objects");
   if (use_test_objs)
   {
     CombinedTestApp::registerObjects(_factory);
     CombinedTestApp::associateSyntax(_syntax, _action_factory);
+    CombinedTestApp::registerExecFlags(_factory);
   }
 }
 
@@ -120,4 +126,31 @@ CombinedTestApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory
   PorousFlowTestApp::associateSyntax(syntax, action_factory);
   RdgTestApp::associateSyntax(syntax, action_factory);
   LevelSetTestApp::associateSyntax(syntax, action_factory);
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+CombinedTestApp__registerExecFlags(Factory & factory)
+{
+  CombinedTestApp::registerExecFlags(factory);
+}
+void
+CombinedTestApp::registerExecFlags(Factory & factory)
+{
+  ChemicalReactionsTestApp::registerExecFlags(factory);
+  ContactTestApp::registerExecFlags(factory);
+  FluidPropertiesTestApp::registerExecFlags(factory);
+  HeatConductionTestApp::registerExecFlags(factory);
+  MiscTestApp::registerExecFlags(factory);
+  NavierStokesTestApp::registerExecFlags(factory);
+  PhaseFieldTestApp::registerExecFlags(factory);
+  RichardsTestApp::registerExecFlags(factory);
+  SolidMechanicsTestApp::registerExecFlags(factory);
+  StochasticToolsTestApp::registerExecFlags(factory);
+  TensorMechanicsTestApp::registerExecFlags(factory);
+  WaterSteamEOSTestApp::registerExecFlags(factory);
+  XFEMTestApp::registerExecFlags(factory);
+  PorousFlowTestApp::registerExecFlags(factory);
+  RdgTestApp::registerExecFlags(factory);
+  LevelSetTestApp::registerExecFlags(factory);
 }

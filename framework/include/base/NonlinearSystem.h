@@ -1,21 +1,18 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef NONLINEARSYSTEM_H
 #define NONLINEARSYSTEM_H
 
 #include "NonlinearSystemBase.h"
+#include "ComputeResidualFunctor.h"
+#include "ComputeFDResidualFunctor.h"
 
 /**
  * Nonlinear system to be solved
@@ -73,6 +70,8 @@ public:
 
 protected:
   TransientNonlinearImplicitSystem & _transient_sys;
+  ComputeResidualFunctor _nl_residual_functor;
+  ComputeFDResidualFunctor _fd_residual_functor;
 
 private:
   /**
@@ -93,6 +92,8 @@ private:
   * method.
   */
   void setupColoringFiniteDifferencedPreconditioner();
+
+  bool _use_coloring_finite_difference;
 };
 
 #endif /* NONLINEARSYSTEM_H */

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef CONVERSION_H
 #define CONVERSION_H
@@ -31,9 +26,6 @@ namespace Moose
 // Scalar conversions
 template <typename T>
 T stringToEnum(const std::string & s);
-
-template <>
-ExecFlagType stringToEnum<ExecFlagType>(const std::string & s);
 
 template <>
 QuadratureType stringToEnum<QuadratureType>(const std::string & s);
@@ -57,9 +49,6 @@ TimeIntegratorType stringToEnum<TimeIntegratorType>(const std::string & s);
 template <typename T>
 std::vector<T> vectorStringsToEnum(const MultiMooseEnum & v);
 
-template <>
-std::vector<ExecFlagType> vectorStringsToEnum<ExecFlagType>(const MultiMooseEnum & v);
-
 /// conversion to string
 template <typename T>
 std::string
@@ -72,9 +61,6 @@ stringify(const T & t)
 
 /// Convert solve type into human readable string
 std::string stringify(const SolveType & t);
-
-/// Convert execute flags type into human readable string
-std::string stringify(const ExecFlagType & t);
 
 /// Add no-op stringify if the argument already is a string (must use overloading)
 std::string stringify(const std::string & s);

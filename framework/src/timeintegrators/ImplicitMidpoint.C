@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ImplicitMidpoint.h"
 #include "NonlinearSystem.h"
@@ -33,12 +28,10 @@ ImplicitMidpoint::ImplicitMidpoint(const InputParameters & parameters)
 {
 }
 
-ImplicitMidpoint::~ImplicitMidpoint() {}
-
 void
 ImplicitMidpoint::computeTimeDerivatives()
 {
-  // We are multiplying by the method coefficients in postStep(), so
+  // We are multiplying by the method coefficients in postResidual(), so
   // the time derivatives are of the same form at every stage although
   // the current solution varies depending on the stage.
   _u_dot = *_solution;
@@ -71,7 +64,7 @@ ImplicitMidpoint::solve()
 }
 
 void
-ImplicitMidpoint::postStep(NumericVector<Number> & residual)
+ImplicitMidpoint::postResidual(NumericVector<Number> & residual)
 {
   if (_stage == 1)
   {
@@ -109,5 +102,5 @@ ImplicitMidpoint::postStep(NumericVector<Number> & residual)
   }
   else
     mooseError(
-        "ImplicitMidpoint::postStep(): _stage = ", _stage, ", only _stage = 1, 2 is allowed.");
+        "ImplicitMidpoint::postResidual(): _stage = ", _stage, ", only _stage = 1, 2 is allowed.");
 }

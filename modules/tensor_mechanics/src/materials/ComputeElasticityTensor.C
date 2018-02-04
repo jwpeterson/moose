@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "ComputeElasticityTensor.h"
 #include "RotationTensor.h"
 
@@ -24,8 +27,8 @@ ComputeElasticityTensor::ComputeElasticityTensor(const InputParameters & paramet
     _Cijkl(getParam<std::vector<Real>>("C_ijkl"),
            (RankFourTensor::FillMethod)(int)getParam<MooseEnum>("fill_method"))
 {
-  // all tensors created by this class are always constant in time
-  issueGuarantee(_elasticity_tensor_name, Guarantee::CONSTANT_IN_TIME);
+  if (!isParamValid("elasticity_tensor_prefactor"))
+    issueGuarantee(_elasticity_tensor_name, Guarantee::CONSTANT_IN_TIME);
 
   if (_Cijkl.isIsotropic())
     issueGuarantee(_elasticity_tensor_name, Guarantee::ISOTROPIC);

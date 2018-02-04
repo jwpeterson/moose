@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "TensorMechanicsApp.h"
 #include "Moose.h"
 #include "AppFactory.h"
@@ -84,6 +87,7 @@
 #include "ComputeThermalExpansionEigenstrain.h"
 #include "ComputeMeanThermalExpansionFunctionEigenstrain.h"
 #include "ComputeInstantaneousThermalExpansionFunctionEigenstrain.h"
+#include "ComputeReducedOrderEigenstrain.h"
 #include "ComputeVolumetricEigenstrain.h"
 #include "ComputeConcentrationDependentElasticityTensor.h"
 #include "FiniteStrainHyperElasticViscoPlastic.h"
@@ -112,11 +116,11 @@
 #include "ComputePlasticHeatEnergy.h"
 #include "ComputeInterfaceStress.h"
 #include "TensileStressUpdate.h"
-#include "ComputeFiniteStrainElasticStressBirchMurnaghan.h"
 #include "GeneralizedMaxwellModel.h"
 #include "GeneralizedKelvinVoigtModel.h"
 #include "LinearViscoelasticStressUpdate.h"
 #include "ComputeLinearViscoelasticStress.h"
+#include "ComputeEigenstrainFromInitialStress.h"
 
 #include "TensorMechanicsPlasticSimpleTester.h"
 #include "TensorMechanicsPlasticTensile.h"
@@ -172,6 +176,7 @@
 #include "DisplacementAboutAxis.h"
 #include "PresetDisplacement.h"
 #include "PresetAcceleration.h"
+#include "StickyBC.h"
 
 #include "CrystalPlasticitySlipRateGSS.h"
 #include "CrystalPlasticitySlipResistanceGSS.h"
@@ -200,6 +205,8 @@
 #include "InteractionIntegralBenchmarkBC.h"
 #include "MixedModeEquivalentK.h"
 #include "EshelbyTensor.h"
+#include "InteractionIntegral.h"
+#include "ThermalFractureIntegral.h"
 
 template <>
 InputParameters
@@ -216,6 +223,9 @@ TensorMechanicsApp::TensorMechanicsApp(const InputParameters & parameters) : Moo
 
   Moose::associateSyntax(_syntax, _action_factory);
   TensorMechanicsApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  TensorMechanicsApp::registerExecFlags(_factory);
 }
 
 TensorMechanicsApp::~TensorMechanicsApp() {}
@@ -308,6 +318,7 @@ TensorMechanicsApp::registerObjects(Factory & factory)
   registerMaterial(ComputeThermalExpansionEigenstrain);
   registerMaterial(ComputeMeanThermalExpansionFunctionEigenstrain);
   registerMaterial(ComputeInstantaneousThermalExpansionFunctionEigenstrain);
+  registerMaterial(ComputeReducedOrderEigenstrain);
   registerMaterial(ComputeVolumetricEigenstrain);
   registerMaterial(ComputeConcentrationDependentElasticityTensor);
   registerMaterial(FiniteStrainHyperElasticViscoPlastic);
@@ -336,12 +347,13 @@ TensorMechanicsApp::registerObjects(Factory & factory)
   registerMaterial(ComputePlasticHeatEnergy);
   registerMaterial(ComputeInterfaceStress);
   registerMaterial(TensileStressUpdate);
-  registerMaterial(ComputeFiniteStrainElasticStressBirchMurnaghan);
   registerMaterial(EshelbyTensor);
   registerMaterial(GeneralizedMaxwellModel);
   registerMaterial(GeneralizedKelvinVoigtModel);
   registerMaterial(LinearViscoelasticStressUpdate);
   registerMaterial(ComputeLinearViscoelasticStress);
+  registerMaterial(ThermalFractureIntegral);
+  registerMaterial(ComputeEigenstrainFromInitialStress);
 
   registerUserObject(TensorMechanicsPlasticSimpleTester);
   registerUserObject(TensorMechanicsPlasticTensile);
@@ -401,6 +413,7 @@ TensorMechanicsApp::registerObjects(Factory & factory)
   registerBoundaryCondition(PresetDisplacement);
   registerBoundaryCondition(PresetAcceleration);
   registerBoundaryCondition(InteractionIntegralBenchmarkBC);
+  registerBoundaryCondition(StickyBC);
 
   registerPostprocessor(CavityPressurePostprocessor);
   registerPostprocessor(Mass);
@@ -408,6 +421,7 @@ TensorMechanicsApp::registerObjects(Factory & factory)
   registerPostprocessor(MaterialTensorIntegral);
   registerPostprocessor(MaterialTimeStepPostprocessor);
   registerPostprocessor(JIntegral);
+  registerPostprocessor(InteractionIntegral);
   registerPostprocessor(CrackFrontData);
   registerPostprocessor(MixedModeEquivalentK);
 
@@ -491,4 +505,16 @@ TensorMechanicsApp::associateSyntax(Syntax & syntax, ActionFactory & action_fact
   registerAction(DomainIntegralAction, "add_aux_variable");
   registerAction(DomainIntegralAction, "add_aux_kernel");
   registerAction(DomainIntegralAction, "add_postprocessor");
+  registerAction(DomainIntegralAction, "add_material");
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+TensorMechanicsApp__registerExecFlags(Factory & factory)
+{
+  TensorMechanicsApp::registerExecFlags(factory);
+}
+void
+TensorMechanicsApp::registerExecFlags(Factory & /*factory*/)
+{
 }

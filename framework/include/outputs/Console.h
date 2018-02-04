@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef CONSOLE_H
 #define CONSOLE_H
@@ -185,14 +180,8 @@ protected:
   /// State for solve performance log
   bool _solve_log;
 
-  /// State for setup performance log
-  bool _setup_log;
-
   /// Control the display libMesh performance log
   bool _libmesh_log;
-
-  /// State for early setup log printing
-  bool _setup_log_early;
 
   /// State for the performance log header information
   bool _perf_header;
@@ -221,9 +210,6 @@ private:
    * output stream buffer is cleaned up correctly. Thus, it is a private method.
    */
   void mooseConsole(const std::string & message);
-
-  /// State of the --timing command line argument from MooseApp
-  bool _timing;
 
   /// Reference to cached messages from calls to _console
   const std::ostringstream & _console_buffer;

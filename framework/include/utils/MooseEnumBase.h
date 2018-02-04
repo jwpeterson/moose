@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MOOSEENUMBASE_H
 #define MOOSEENUMBASE_H
@@ -35,8 +30,7 @@ public:
    * separate string to set a default for this instance.
    * @param names - a list of names for this enumeration
    * @param allow_out_of_range - determines whether this enumeration will accept values outside of
-   * it's range of
-   *                       defined values.
+   *                             its range of defined values.
    */
   MooseEnumBase(std::string names, bool allow_out_of_range = false);
 
@@ -53,10 +47,10 @@ public:
 
   /**
    * Deprecates various options in the MOOSE enum. For each deprecated option,
-   * you may supply an option new option that will be used in a message telling
+   * you may supply an optional new option that will be used in a message telling
    * the user which new option replaces the old one.
    */
-  void deprecate(const std::string & name, const std::string & new_name = "");
+  virtual void deprecate(const std::string & name, const std::string & raw_name = "");
 
   /**
    * Method for returning a vector of all valid enumeration names for this instance
@@ -71,6 +65,12 @@ public:
   std::string getRawNames() const;
 
   /**
+   * Method for returning a vector of ids for this instance
+   * @return a vector of ints containing the possible ids for this enumeration
+   */
+  std::vector<int> getIDs() const;
+
+  /**
    * IsValid
    * @return - a Boolean indicating whether this Enumeration has been set
    */
@@ -80,25 +80,12 @@ public:
    * isOutOfRangeAllowed
    * @return - a Boolean indicating whether enum names out of range are allowed
    */
-  bool isOutOfRangeAllowed() const { return _out_of_range_index; }
-
-protected:
-  MooseEnumBase();
+  bool isOutOfRangeAllowed() const { return _allow_out_of_range; }
 
   /**
-   * Populates the _names vector
-   * @param names - a space separated list of names used to populate the internal names vector
+   * Return the complete set of available flags.
    */
-  void fillNames(std::string names, std::string option_delim = " ");
-
-  // The method that must be implemented to check derived class values against the _deprecated_names
-  // list
-  virtual void checkDeprecated() const = 0;
-
-  /**
-   * Check and warn deprecated values
-   */
-  void checkDeprecatedBase(const std::string & name_upper) const;
+  const std::set<MooseEnumItem> & items() { return _items; }
 
   ///@{
   /**
@@ -109,20 +96,47 @@ protected:
   std::set<MooseEnumItem>::const_iterator find(int id) const;
   ///@}
 
+  /**
+   * Compute the next valid ID.
+   */
+  int getNextValidID() const;
+
+protected:
+  MooseEnumBase();
+
+  ///@{
+  /**
+   * Methods to add possible enumeration value to the enum.
+   *
+   * The MooseEnum/MultiMooseEnum are not designed to be modified, with respect to the list
+   * of possible values. However, this is not the case for the ExecFlagEnum which is a special
+   * type of MultiMooseEnum for managing the "execute_on" flags. These methods are used by
+   * ExecFlagEnum to allow users to modify the available execute flags for their object.
+   */
+  void addEnumerationNames(const std::string & names);
+  void addEnumerationName(const std::string & raw_name);
+  void addEnumerationName(const std::string & name, const int & value);
+  void addEnumerationItem(const MooseEnumItem & item);
+  ///@}
+
+  /**
+   * Method that must be implemented to check derived class values against the _deprecated_names
+   */
+  virtual void checkDeprecated() const = 0;
+
+  /**
+   * Check and warn deprecated values
+   */
+  void checkDeprecated(const MooseEnumItem & item) const;
+
   /// Storage for the assigned items
   std::set<MooseEnumItem> _items;
 
   /// The map of deprecated names and optional replacements
-  std::map<std::string, std::string> _deprecated_names;
+  std::map<MooseEnumItem, MooseEnumItem> _deprecated_items;
 
-  /**
-   * The index of values assigned that are NOT values in this enum.  If this index is 0 (false) then
-   * out of range values are not allowed.
-   */
-  int _out_of_range_index;
-
-  /// Constants
-  const static int INVALID_ID;
+  /// Flag to enable enumeration items not previously defined
+  bool _allow_out_of_range;
 };
 
 #endif // MOOSEENUMBASE_H

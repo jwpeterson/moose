@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "FluidPropertiesApp.h"
 #include "Moose.h"
@@ -12,7 +14,6 @@
 
 #include "FluidPropertiesMaterial.h"
 #include "FluidPropertiesMaterialPT.h"
-#include "MultiComponentFluidPropertiesMaterialPT.h"
 
 #include "IdealGasFluidProperties.h"
 #include "IdealGasFluidPropertiesPT.h"
@@ -47,6 +48,9 @@ FluidPropertiesApp::FluidPropertiesApp(InputParameters parameters) : MooseApp(pa
 
   Moose::associateSyntax(_syntax, _action_factory);
   FluidPropertiesApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  FluidPropertiesApp::registerExecFlags(_factory);
 }
 
 FluidPropertiesApp::~FluidPropertiesApp() {}
@@ -76,7 +80,6 @@ FluidPropertiesApp::registerObjects(Factory & factory)
 {
   registerMaterial(FluidPropertiesMaterial);
   registerMaterial(FluidPropertiesMaterialPT);
-  registerMaterial(MultiComponentFluidPropertiesMaterialPT);
 
   registerUserObject(IdealGasFluidProperties);
   registerUserObject(IdealGasFluidPropertiesPT);
@@ -112,4 +115,15 @@ FluidPropertiesApp::associateSyntax(Syntax & syntax, ActionFactory & action_fact
   syntax.addDependency("add_fluid_properties", "init_displaced_problem");
 
   registerAction(AddFluidPropertiesAction, "add_fluid_properties");
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+FluidPropertiesApp__registerExecFlags(Factory & factory)
+{
+  FluidPropertiesApp::registerExecFlags(factory);
+}
+void
+FluidPropertiesApp::registerExecFlags(Factory & /*factory*/)
+{
 }

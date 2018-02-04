@@ -1,4 +1,9 @@
 [Tests]
+  [./except01]
+    type = 'RunException'
+    input = 'except01.i'
+    expect_err = 'ComputeEigenstrainFromInitialStress: 9 initial stress functions must be provided.  You supplied 3'
+  [../]
   [./gravity]
     type = 'Exodiff'
     input = 'gravity.i'

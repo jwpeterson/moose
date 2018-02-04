@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "IdealGasFluidPropertiesTest.h"
 
@@ -120,5 +115,28 @@ TEST_F(IdealGasFluidPropertiesTest, testAll)
     ABS_TEST("h", h, _fp->h(p, T), 1e-16);
     ABS_TEST("dh_dp", dh_dp, dh_dp_fd, 1e-12);
     ABS_TEST("dh_dT", dh_dT, dh_dT_fd, 6e-7);
+  }
+
+  {
+    // entropy from enthalpy and pressure
+    const Real rel_diff = 1e-6;
+    const Real h = 1e5;
+    const Real p = 1e5;
+    const Real dh = h * rel_diff;
+    const Real dp = p * rel_diff;
+
+    Real s, ds_dh, ds_dp;
+    _fp->s_from_h_p(h, p, s, ds_dh, ds_dp);
+
+    Real s_dh, s_dp, ds_dh_dummy, ds_dp_dummy;
+    _fp->s_from_h_p(h + dh, p, s_dh, ds_dh_dummy, ds_dp_dummy);
+    _fp->s_from_h_p(h, p + dp, s_dp, ds_dh_dummy, ds_dp_dummy);
+
+    const Real ds_dh_fd = (s_dh - s) / dh;
+    const Real ds_dp_fd = (s_dp - s) / dp;
+
+    const Real rel_tol = 1e-5;
+    REL_TEST("ds_dh", ds_dh, ds_dh_fd, rel_tol);
+    REL_TEST("ds_dp", ds_dp, ds_dp_fd, rel_tol);
   }
 }

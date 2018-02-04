@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef FACTORY_H
 #define FACTORY_H
@@ -81,6 +76,7 @@ class InputParameters;
 #define registerOutput(name) registerObject(name)
 #define registerControl(name) registerObject(name)
 #define registerPartitioner(name) registerObject(name)
+#define registerRelationshipManager(name) registerObject(name)
 
 #define registerNamedKernel(obj, name) registerNamedObject(obj, name)
 #define registerNamedNodalKernel(obj, name) registerNamedObject(obj, name)
@@ -116,6 +112,9 @@ class InputParameters;
 #define registerNamedControl(obj, name) registerNamedObject(obj, name)
 #define registerNamedPartitioner(obj, name) registerNamedObject(obj, name)
 
+// Execute on flag registration
+#define registerExecFlag(flag) factory.regExecFlag(flag)
+
 /**
  * alias to wrap shared pointer type
  */
@@ -143,7 +142,7 @@ template <class T>
 MooseObjectPtr
 buildObject(const InputParameters & parameters)
 {
-  return MooseObjectPtr(new T(parameters));
+  return std::make_shared<T>(parameters);
 }
 
 /**
@@ -215,9 +214,7 @@ public:
    * Note: Params file and line are supplied by the macro
    */
   template <typename T>
-  void regDeprecated(const std::string & obj_name,
-                     const std::string & file,
-                     int line)
+  void regDeprecated(const std::string & obj_name, const std::string & file, int line)
   {
     // Register the name
     reg<T>(obj_name, file, line);
@@ -321,6 +318,12 @@ public:
   void deprecateObject(const std::string & name);
   void deprecateObject(const std::string & name, const std::string & replacement);
   ///@}
+
+  /**
+   * Add a new flag to the app.
+   * @param flag The flag to add as available to the app level ExecFlagEnum.
+   */
+  void regExecFlag(const ExecFlagType & flag);
 
 protected:
   /**

@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "InertialForce.h"
 #include "SubProblem.h"
 
@@ -12,9 +15,11 @@ InputParameters
 validParams<InertialForce>()
 {
   InputParameters params = validParams<Kernel>();
-  params.addClassDescription("Calculates the residual for the interial force (M*accel) and the "
-                             "contribution of mass dependent Rayleigh damping and HHT time "
-                             "integration scheme [eta*M*((1+alpha)vel-alpha*vel_old)]");
+  params.addClassDescription("Calculates the residual for the interial force "
+                             "(M $*$ acceleration) and the contribution of mass"
+                             " dependent Rayleigh damping and HHT time "
+                             " integration scheme [ eta $*$ M $*$"
+                             " ((1+alpha)velq2-alpha $*$ vel-old) ]");
   params.set<bool>("use_displaced_mesh") = true;
   params.addRequiredCoupledVar("velocity", "velocity variable");
   params.addRequiredCoupledVar("acceleration", "acceleration variable");

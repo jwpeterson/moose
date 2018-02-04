@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "MultiAppCopyTransfer.h"
 
@@ -25,6 +20,7 @@
 
 #include "libmesh/system.h"
 #include "libmesh/id_types.h"
+#include "libmesh/string_to_enum.h"
 
 template <>
 InputParameters
@@ -83,7 +79,10 @@ MultiAppCopyTransfer::transfer(FEProblemBase & to_problem, FEProblemBase & from_
 
   // Check integrity
   if (to_var.feType() != from_var.feType())
-    mooseError("The variables must be the same type (order and family).");
+    paramError("variable",
+               "'variable' and 'source_variable' must be the same type (order and family): ",
+               libMesh::Utility::enum_to_string<FEFamily>(to_var.feType().family),
+               moose::internal::incompatVarMsg(to_var, from_var));
 
   if ((to_mesh.n_nodes() != from_mesh.n_nodes()) || (to_mesh.n_elem() != from_mesh.n_elem()))
     mooseError("The meshes must be identical to utilize MultiAppCopyTransfer.");

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef TABULATEDFLUIDPROPERTIESTEST_H
 #define TABULATEDFLUIDPROPERTIESTEST_H
@@ -58,7 +53,7 @@ protected:
 
     InputParameters tab_uo_params = _factory->getValidParams("TabulatedFluidProperties");
     tab_uo_params.set<UserObjectName>("fp") = "co2_fp";
-    tab_uo_params.set<FileName>("fluid_property_file") = "data/csv/fluid_properties.csv";
+    tab_uo_params.set<FileName>("fluid_property_file") = "data/csv/fluid_props.csv";
     _fe_problem->addUserObject("TabulatedFluidProperties", "tab_fp", tab_uo_params);
     _tab_fp = &_fe_problem->getUserObject<TabulatedFluidProperties>("tab_fp");
 
@@ -94,14 +89,14 @@ protected:
   {
     const char * argv[] = {"foo", NULL};
 
-    _app.reset(AppFactory::createApp("MooseUnitApp", 1, (char **)argv));
+    _app = AppFactory::createAppShared("MooseUnitApp", 1, (char **)argv);
     _factory = &_app->getFactory();
 
     registerObjects(*_factory);
     buildObjects();
   }
 
-  std::unique_ptr<MooseApp> _app;
+  std::shared_ptr<MooseApp> _app;
   std::unique_ptr<MooseMesh> _mesh;
   std::unique_ptr<FEProblem> _fe_problem;
   Factory * _factory;

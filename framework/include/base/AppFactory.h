@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef APPFACTORY_H
 #define APPFACTORY_H
@@ -29,10 +24,8 @@ class InputParameters;
 
 /**
  * alias to wrap shared pointer type
- * TODO: Convert to shared pointer by default in the future
- * using MooseAppPtr = std::shared_ptr<MooseApp>;
  */
-using MooseAppPtr = MooseApp *;
+using MooseAppPtr = std::shared_ptr<MooseApp>;
 
 /**
  * alias for validParams function
@@ -53,14 +46,8 @@ using registeredMooseAppIterator = std::map<std::string, paramsPtr>::iterator;
  * Build an object of type T
  */
 template <class T>
-MooseApp *
+MooseAppPtr
 buildApp(const InputParameters & parameters)
-{
-  return new T(parameters);
-}
-template <class T>
-MooseApp *
-buildAppSharedPtr(const InputParameters & parameters)
 {
   return std::make_shared<T>(parameters);
 }
@@ -82,11 +69,10 @@ public:
   /**
    * Helper function for creating a MooseApp from command-line arguments.
    */
-  static MooseApp *
-  createApp(std::string app_type, int argc, char ** argv, MPI_Comm COMM_WORLD_IN = MPI_COMM_WORLD);
-
-  static std::shared_ptr<MooseApp>
-  createAppShared(const std::string & app_type, int argc, char ** argv);
+  static MooseAppPtr createAppShared(const std::string & app_type,
+                                     int argc,
+                                     char ** argv,
+                                     MPI_Comm comm_word = MPI_COMM_WORLD);
 
   /**
    * Register a new object
@@ -116,10 +102,10 @@ public:
    * @param parameters Parameters this object should have
    * @return The created object
    */
-  MooseApp * create(const std::string & app_type,
-                    const std::string & name,
-                    InputParameters parameters,
-                    MPI_Comm COMM_WORLD_IN);
+  MooseAppPtr createShared(const std::string & app_type,
+                           const std::string & name,
+                           InputParameters parameters,
+                           MPI_Comm COMM_WORLD_IN);
 
   ///@{
   /**

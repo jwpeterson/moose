@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ScalarInitialCondition.h"
 #include "MooseVariableScalar.h"
@@ -35,8 +30,8 @@ ScalarInitialCondition::ScalarInitialCondition(const InputParameters & parameter
     ScalarCoupleable(this),
     FunctionInterface(this),
     DependencyResolverInterface(),
-    _fe_problem(*parameters.getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")),
-    _sys(*parameters.getCheckedPointerParam<SystemBase *>("_sys")),
+    _fe_problem(*getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")),
+    _sys(*getCheckedPointerParam<SystemBase *>("_sys")),
     _tid(parameters.get<THREAD_ID>("_tid")),
     _assembly(_fe_problem.assembly(_tid)),
     _t(_fe_problem.time()),

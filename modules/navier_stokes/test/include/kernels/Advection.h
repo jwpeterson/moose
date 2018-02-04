@@ -1,0 +1,40 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
+#ifndef ADVECTION_H
+#define ADVECTION_H
+
+#include "INSBase.h"
+
+// Forward Declarations
+class Advection;
+
+template <>
+InputParameters validParams<Advection>();
+
+/**
+ * This class is responsible for solving the scalar advection
+ * equation, possibly with a forcing function.
+ */
+class Advection : public INSBase
+{
+public:
+  Advection(const InputParameters & parameters);
+
+  virtual ~Advection() {}
+
+protected:
+  virtual Real computeQpResidual();
+  virtual Real computeQpJacobian();
+  virtual Real computeQpOffDiagJacobian(unsigned /*jvar*/) { return 0; }
+  Function & _ffn;
+  MooseEnum _tau_type;
+};
+
+#endif

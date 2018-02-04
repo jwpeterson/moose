@@ -1,24 +1,33 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "InternalVolume.h"
 
 #include "MooseMesh.h"
+#include "Function.h"
 
 template <>
 InputParameters
 validParams<InternalVolume>()
 {
   InputParameters params = validParams<SideIntegralPostprocessor>();
+  params.addClassDescription("Computes the volume of an enclosed area by "
+                             "performing an integral over a user-supplied boundary.");
   params.addRangeCheckedParam<unsigned int>(
       "component", 0, "component<3", "The component to use in the integration");
   params.addParam<Real>(
       "scale_factor", 1, "A scale factor to be applied to the internal volume calculation");
-  params.addParam<Real>(
-      "addition", 0, "An additional volume to be included in the internal volume calculation");
+  params.addParam<FunctionName>("addition",
+                                0,
+                                "An additional volume to be included in the "
+                                "internal volume calculation. A time-dependent "
+                                "function is expected.");
   params.set<bool>("use_displaced_mesh") = true;
   return params;
 }
@@ -27,7 +36,7 @@ InternalVolume::InternalVolume(const InputParameters & parameters)
   : SideIntegralPostprocessor(parameters),
     _component(getParam<unsigned int>("component")),
     _scale(getParam<Real>("scale_factor")),
-    _addition(getParam<Real>("addition"))
+    _addition(getFunction("addition"))
 {
 }
 
@@ -120,5 +129,6 @@ InternalVolume::computeQpIntegral()
 Real
 InternalVolume::getValue()
 {
-  return _scale * SideIntegralPostprocessor::getValue() + _addition;
+  Point p;
+  return _scale * SideIntegralPostprocessor::getValue() + _addition.value(_t, p);
 }

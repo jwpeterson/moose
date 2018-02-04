@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "CavityPressureUOAction.h"
 #include "Factory.h"
 #include "FEProblem.h"
@@ -28,8 +31,10 @@ validParams<CavityPressureUOAction>()
       0,
       "The amount of time during which the pressure will ramp from zero to its true value");
   params.addParam<std::string>("output", "The name to use for the cavity pressure value");
-  params += validParams<SetupInterface>();
-  params.set<MultiMooseEnum>("execute_on") = "linear";
+
+  ExecFlagEnum exec_enum = MooseUtils::getDefaultExecFlagEnum();
+  exec_enum = EXEC_LINEAR;
+  params.addParam<ExecFlagEnum>("execute_on", exec_enum, exec_enum.getDocString());
   return params;
 }
 
@@ -50,7 +55,7 @@ CavityPressureUOAction::act()
   std::string name = _name + "UserObject";
 
   InputParameters params = _factory.getValidParams("CavityPressureUserObject");
-  params.set<MultiMooseEnum>("execute_on") = getParam<MultiMooseEnum>("execute_on");
+  params.set<ExecFlagEnum>("execute_on") = getParam<ExecFlagEnum>("execute_on");
   params.set<Real>("initial_pressure") = _initial_pressure;
   params.set<std::vector<PostprocessorName>>("material_input") = _material_input;
   params.set<Real>("R") = _R;

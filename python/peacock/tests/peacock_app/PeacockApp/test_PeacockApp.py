@@ -1,10 +1,23 @@
 #!/usr/bin/env python
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 from peacock.utils import Testing
 import os
 from PyQt5 import QtWidgets
 
 class Tests(Testing.PeacockTester):
     qapp = QtWidgets.QApplication([])
+
+    def tearDown(self):
+        if self.input:
+            self.input.MeshViewerPlugin.reset()
 
     def create_app(self, args):
         self.createPeacockApp(args)

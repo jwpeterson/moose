@@ -1,16 +1,20 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "TabulatedFluidProperties.h"
 #include "BicubicSplineInterpolation.h"
 #include "MooseUtils.h"
+#include "Conversion.h"
 
 // C++ includes
 #include <fstream>
+#include <ctime>
 
 template <>
 InputParameters
@@ -22,20 +26,16 @@ validParams<TabulatedFluidProperties>()
                             "Name of the csv file containing the tabulated fluid property data");
   params.addRangeCheckedParam<Real>("temperature_min",
                                     300.0,
-                                    "temperature_min >= 273.15",
+                                    "temperature_min > 0",
                                     "Minimum temperature for tabulated data. Default is 300 K)");
-  params.addRangeCheckedParam<Real>("temperature_max",
-                                    500.0,
-                                    "temperature_max <= 1000.0",
-                                    "Maximum temperature for tabulated data. Default is 500 K");
+  params.addParam<Real>(
+      "temperature_max", 500.0, "Maximum temperature for tabulated data. Default is 500 K");
   params.addRangeCheckedParam<Real>("pressure_min",
                                     1.0e5,
-                                    "pressure_min >= 1.0e5",
+                                    "pressure_min > 0",
                                     "Minimum pressure for tabulated data. Default is 0.1 MPa)");
-  params.addRangeCheckedParam<Real>("pressure_max",
-                                    50.0e6,
-                                    "pressure_max <= 800.0e6",
-                                    "Maximum pressure for tabulated data. Default is 50 MPa");
+  params.addParam<Real>(
+      "pressure_max", 50.0e6, "Maximum pressure for tabulated data. Default is 50 MPa");
   params.addRangeCheckedParam<unsigned int>(
       "num_T", 100, "num_T > 0", "Number of points to divide temperature range. Default is 100");
   params.addRangeCheckedParam<unsigned int>(
@@ -63,6 +63,9 @@ TabulatedFluidProperties::TabulatedFluidProperties(const InputParameters & param
     mooseError("temperature_max must be greater than temperature_min in ", name());
   if (_pressure_max <= _pressure_min)
     mooseError("pressure_max must be greater than pressure_min in ", name());
+
+  // Lines starting with # are treated as comments
+  _csv_reader.setComment("#");
 }
 
 TabulatedFluidProperties::~TabulatedFluidProperties() {}
@@ -273,20 +276,38 @@ TabulatedFluidProperties::h_dpT(
 }
 
 Real
-TabulatedFluidProperties::mu(Real density, Real temperature) const
+TabulatedFluidProperties::mu(Real pressure, Real temperature) const
 {
-  return _fp.mu(density, temperature);
+  Real rho = this->rho(pressure, temperature);
+  return this->mu_from_rho_T(rho, temperature);
 }
 
 void
-TabulatedFluidProperties::mu_drhoT(Real density,
-                                   Real temperature,
-                                   Real ddensity_dT,
-                                   Real & mu,
-                                   Real & dmu_drho,
-                                   Real & dmu_dT) const
+TabulatedFluidProperties::mu_dpT(
+    Real pressure, Real temperature, Real & mu, Real & dmu_dp, Real & dmu_dT) const
 {
-  _fp.mu_drhoT(density, temperature, ddensity_dT, mu, dmu_drho, dmu_dT);
+  Real rho, drho_dp, drho_dT;
+  this->rho_dpT(pressure, temperature, rho, drho_dp, drho_dT);
+  Real dmu_drho;
+  this->mu_drhoT_from_rho_T(rho, temperature, drho_dT, mu, dmu_drho, dmu_dT);
+  dmu_dp = dmu_drho * drho_dp;
+}
+
+Real
+TabulatedFluidProperties::mu_from_rho_T(Real density, Real temperature) const
+{
+  return _fp.mu_from_rho_T(density, temperature);
+}
+
+void
+TabulatedFluidProperties::mu_drhoT_from_rho_T(Real density,
+                                              Real temperature,
+                                              Real ddensity_dT,
+                                              Real & mu,
+                                              Real & dmu_drho,
+                                              Real & dmu_dT) const
+{
+  _fp.mu_drhoT_from_rho_T(density, temperature, ddensity_dT, mu, dmu_drho, dmu_dT);
 }
 
 Real
@@ -308,9 +329,23 @@ TabulatedFluidProperties::cv(Real pressure, Real temperature) const
 }
 
 Real
-TabulatedFluidProperties::k(Real density, Real temperature) const
+TabulatedFluidProperties::k(Real pressure, Real temperature) const
 {
-  return _fp.k(density, temperature);
+  Real rho = this->rho(pressure, temperature);
+  return this->k_from_rho_T(rho, temperature);
+}
+
+void
+TabulatedFluidProperties::k_dpT(
+    Real /*pressure*/, Real /*temperature*/, Real & /*k*/, Real & /*dk_dp*/, Real & /*dk_dT*/) const
+{
+  mooseError(name(), "k_dpT() is not implemented");
+}
+
+Real
+TabulatedFluidProperties::k_from_rho_T(Real density, Real temperature) const
+{
+  return _fp.k_from_rho_T(density, temperature);
 }
 
 Real
@@ -345,6 +380,11 @@ TabulatedFluidProperties::writeTabulatedData(std::string file_name)
     MooseUtils::checkFileWriteable(file_name);
 
     std::ofstream file_out(file_name.c_str());
+
+    // Write out date and fluid type
+    time_t now = time(&now);
+    file_out << "# " << _fp.fluidName() << " properties created by TabulatedFluidProperties on "
+             << ctime(&now) << "\n";
 
     std::string column_names{"pressure, temperature, density, enthalpy, internal_energy"};
 
@@ -415,23 +455,16 @@ TabulatedFluidProperties::reshapeData2D(unsigned int nrow,
 }
 
 void
-TabulatedFluidProperties::checkInputVariables(Real pressure, Real temperature) const
+TabulatedFluidProperties::checkInputVariables(Real & pressure, Real & temperature) const
 {
   if (pressure < _pressure_min || pressure > _pressure_max)
-    mooseError("Pressure ",
-               pressure,
-               " is outside the range of tabulated pressure (",
-               _pressure_min,
-               ", ",
-               _pressure_max,
-               ".");
+    throw MooseException(
+        "Pressure " + Moose::stringify(pressure) + " is outside the range of tabulated pressure (" +
+        Moose::stringify(_pressure_min) + ", " + Moose::stringify(_pressure_max) + ".");
 
   if (temperature < _temperature_min || temperature > _temperature_max)
-    mooseError("Temperature ",
-               temperature,
-               " is outside the range of tabulated temperature (",
-               _temperature_min,
-               ", ",
-               _temperature_max,
-               ".");
+    throw MooseException("Temperature " + Moose::stringify(temperature) +
+                         " is outside the range of tabulated temperature (" +
+                         Moose::stringify(_temperature_min) + ", " +
+                         Moose::stringify(_temperature_max) + ".");
 }

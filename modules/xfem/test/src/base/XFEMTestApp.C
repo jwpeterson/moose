@@ -1,3 +1,11 @@
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 #include "XFEMTestApp.h"
 #include "XFEMApp.h"
 #include "Moose.h"
@@ -21,6 +29,9 @@ XFEMTestApp::XFEMTestApp(InputParameters parameters) : MooseApp(parameters)
   Moose::associateSyntax(_syntax, _action_factory);
   XFEMApp::associateSyntaxDepends(_syntax, _action_factory);
   XFEMApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  XFEMApp::registerExecFlags(_factory);
 
   bool use_test_objs = getParam<bool>("allow_test_objects");
   if (use_test_objs)
@@ -64,5 +75,16 @@ XFEMTestApp__associateSyntax(Syntax & syntax, ActionFactory & action_factory)
 }
 void
 XFEMTestApp::associateSyntax(Syntax & /*syntax*/, ActionFactory & /*action_factory*/)
+{
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+XFEMTestApp__registerExecFlags(Factory & factory)
+{
+  XFEMTestApp::registerExecFlags(factory);
+}
+void
+XFEMTestApp::registerExecFlags(Factory & /*factory*/)
 {
 }

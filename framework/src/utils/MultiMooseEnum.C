@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "MultiMooseEnum.h"
 #include "MooseUtils.h"
@@ -52,8 +47,9 @@ MultiMooseEnum::operator==(const MultiMooseEnum & value) const
   if (value.size() != size())
     return false;
 
-  // Return false if this enum does not contain an item from the other
-  return (_current == value._current) && (_items == value._items);
+  // Return false if this enum does not contain an item from the other, since they are the same
+  // size at this point if this is true then they are equal.
+  return contains(value);
 }
 
 bool
@@ -65,9 +61,8 @@ MultiMooseEnum::operator!=(const MultiMooseEnum & value) const
 bool
 MultiMooseEnum::contains(const std::string & value) const
 {
-  std::string upper(MooseUtils::toUpper(value));
-  return std::find_if(_current.begin(), _current.end(), [&upper](const MooseEnumItem & item) {
-           return item.name() == upper;
+  return std::find_if(_current.begin(), _current.end(), [&value](const MooseEnumItem & item) {
+           return item == value;
          }) != _current.end();
 }
 
@@ -75,7 +70,7 @@ bool
 MultiMooseEnum::contains(int value) const
 {
   return std::find_if(_current.begin(), _current.end(), [&value](const MooseEnumItem & item) {
-           return item.id() == value;
+           return item == value;
          }) != _current.end();
 }
 
@@ -83,7 +78,7 @@ bool
 MultiMooseEnum::contains(unsigned short value) const
 {
   return std::find_if(_current.begin(), _current.end(), [&value](const MooseEnumItem & item) {
-           return item.id() == value;
+           return item == value;
          }) != _current.end();
 }
 
@@ -100,7 +95,7 @@ bool
 MultiMooseEnum::contains(const MooseEnumItem & value) const
 {
   return std::find_if(_current.begin(), _current.end(), [&value](const MooseEnumItem & item) {
-           return item.id() == value.id();
+           return item == value;
          }) != _current.end();
 }
 
@@ -192,28 +187,26 @@ MultiMooseEnum::assign(InputIterator first, InputIterator last, bool append)
 
   for (InputIterator it = first; it != last; ++it)
   {
-    std::string upper(MooseUtils::toUpper(*it));
-    checkDeprecatedBase(upper);
-    const auto iter = find(upper);
-
+    const auto iter = find(*it);
     if (iter == _items.end())
     {
-      if (_out_of_range_index == 0) // Are out of range values allowed?
+      if (!_allow_out_of_range) // Are out of range values allowed?
         mooseError("Invalid option \"",
-                   upper,
+                   *it,
                    "\" in MultiMooseEnum.  Valid options (not case-sensitive) are \"",
                    getRawNames(),
                    "\".");
       else
       {
-        MooseEnumItem created(upper, _out_of_range_index++);
+        MooseEnumItem created(*it, getNextValidID());
+        addEnumerationItem(created);
         _current.push_back(created);
-        _items.insert(created);
       }
     }
     else
       _current.push_back(*iter);
   }
+  checkDeprecated();
   return *this;
 }
 
@@ -224,12 +217,8 @@ MultiMooseEnum::remove(InputIterator first, InputIterator last)
   // Create a new list of enumerations by striping out the supplied values
   for (InputIterator it = first; it != last; ++it)
   {
-    // Values stored as upper case
-    std::string upper(MooseUtils::toUpper(*it));
-    std::vector<MooseEnumItem>::iterator iter =
-        std::find_if(_current.begin(), _current.end(), [&upper](const MooseEnumItem & item) {
-          return item.name() == upper;
-        });
+    std::vector<MooseEnumItem>::iterator iter = std::find_if(
+        _current.begin(), _current.end(), [it](const MooseEnumItem & item) { return item == *it; });
     if (iter != _current.end())
       _current.erase(iter);
   }
@@ -251,7 +240,7 @@ void
 MultiMooseEnum::checkDeprecated() const
 {
   for (const auto & item : _current)
-    checkDeprecatedBase(item.name());
+    MooseEnumBase::checkDeprecated(item);
 }
 
 std::ostream &

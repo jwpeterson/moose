@@ -1,3 +1,12 @@
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 import sys
 import os
 from PyQt5 import QtCore, QtWidgets
@@ -106,11 +115,16 @@ class VTKWindowPlugin(QtWidgets.QFrame, ExodusPlugin):
         """
         Clears the VTK windows and restarts the initialize timer.
         """
+        self._window.reset()
         self._window.clear()
-        self._window.update()
         self._initialized = False
         self._reset_required = False
+        self._highlight = None
         self._adjustTimers(start=['initialize'], stop=['update'])
+        self._result = None
+        self._reader = None
+        self.setLoadingMessage('No file selected.')
+        self.setEnabled(False)
         self.windowReset.emit()
 
     def onReloadWindow(self):
@@ -175,24 +189,20 @@ class VTKWindowPlugin(QtWidgets.QFrame, ExodusPlugin):
             self.setEnabled(True)
 
         # Display loading message
-        elif self._peacock_logo not in self._window:
-            if self._filename:
-                msg = '{} does not currently exist.\nIt will load automatically when it is created.'
-                self._peacock_text.update(text=msg.format(self._filename))
-
-            self._window.reset()
-            self._result = None
-            self._reader = None
-            self._window.append(self._peacock_logo)
-            self._window.append(self._peacock_text)
-            self._window.update()
-            self.setEnabled(False)
+        elif self._filename:
+            msg = '{} does not currently exist.\nIt will load automatically when it is created.'
+            self.setLoadingMessage(msg.format(self._filename))
+        else:
+            self.setLoadingMessage("No file selected.")
 
     def setLoadingMessage(self, msg):
         """
         Set the text shown when there isn't a file.
         """
         self._peacock_text.update(text=msg)
+        if self._peacock_logo not in self._window:
+            self._window.append(self._peacock_logo)
+            self._window.append(self._peacock_text)
         self._window.update()
 
     def onInputFileChanged(self, *args):
@@ -292,6 +302,9 @@ class VTKWindowPlugin(QtWidgets.QFrame, ExodusPlugin):
             return
 
         if self._window.needsUpdate():
+            # Update the result first to avoid another when colorbar updates:
+            if self._result and self._result.needsUpdate():
+                self._result.update()
             self._window.update()
             self.windowUpdated.emit()
 
@@ -320,6 +333,9 @@ class VTKWindowPlugin(QtWidgets.QFrame, ExodusPlugin):
             boundary[list]: List of boundary ids to highlight.
             nodeset[list]: List of nodeset ids to highlight.
         """
+        if not self._initialized:
+            return
+
         if not self._highlight:
             self._highlight = chigger.exodus.ExodusResult(self._reader, renderer=self._result.getVTKRenderer(), color=[1,0,0])
 

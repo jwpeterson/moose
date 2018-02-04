@@ -1,8 +1,18 @@
 #!/usr/bin/env python
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 from InputFile import InputFile
 import mooseutils
 import InputTreeWriter
 import os
+import hit
 
 class InputTree(object):
     """
@@ -21,6 +31,7 @@ class InputTree(object):
         self._copyDefaultTree()
         self.root = None
         self.path_map = {}
+        self.input_has_errors = False
         if self.app_info.valid():
             self._copyDefaultTree()
 
@@ -53,41 +64,124 @@ class InputTree(object):
         if self.app_info.valid():
             self._copyDefaultTree()
 
+    def _getComments(self, node):
+        """
+        Get the comments for a node
+        """
+        comments = []
+        for n in node.children(node_type=hit.NodeType.Comment):
+            c = n.render().strip()[1:].strip()
+            comments.append(c)
+
+        return '\n'.join(comments)
+
+    def setInputFileData(self, input_str, filename="String"):
+        """
+        Set a new input file based on a existing string
+        Input:
+            input_str[str]: The input file data to parse
+        Return:
+            bool: If it was a valid input file
+        """
+        try:
+            new_input_file = InputFile()
+            new_input_file.readInputData(input_str, filename)
+            return self._setInputFile(new_input_file)
+        except Exception as e:
+            mooseutils.mooseWarning("setInputFileData exception: %s" % e)
+            return False
+
     def setInputFile(self, input_filename):
         """
-        The input file has changed.
+        Set a new input file
         Input:
             input_filename[str]: The name of the input file
         Return:
             bool: If it was a valid input file
         """
         try:
-            # if the user passes in a bad input file, then leave
-            # things untouched
             new_input_file = InputFile(input_filename)
-            self.input_file = new_input_file
-        except Exception:
+            return self._setInputFile(new_input_file)
+        except Exception as e:
+            mooseutils.mooseWarning("setInputFile exception: %s" % e)
             return False
 
-        self.input_filename = input_filename
+    def _setInputFile(self, input_file):
+        """
+        Copies the nodes of an input file into the tree
+        Input:
+            input_file[InputFile]: Input file to copy
+        Return:
+            bool: True if successfull
+        """
+        self.input_has_errors = False
+        if not input_file.root_node:
+            return False
+        self.input_file = input_file
+        self.input_filename = input_file.filename
+
         if self.app_info.valid():
             self._copyDefaultTree()
-            self.root.comments = '\n'.join(self.input_file.root_node.comments)
-
-            for root_node in self.input_file.getTopNodes():
-                self._addInputFileNode(root_node)
-                if root_node not in self.root.children_write_first:
-                    self.root.children_write_first.append(root_node.name)
+            self.root.comments = self._getComments(self.input_file.root_node)
+            active = self._readParameters(self.input_file.root_node, "/")
+            for root_node in self.input_file.root_node.children(node_type=hit.NodeType.Section):
+                self._addInputFileNode(root_node, root_node.path() in active)
+                if root_node.path() not in self.root.children_write_first:
+                    self.root.children_write_first.append(root_node.path())
             return True
         return False
 
-    def _addInputFileNode(self, input_node):
+    def _readParameters(self, input_node, path):
+        """
+        Read the parameters set on a block.
+        We special case the "active" and "inactive" parameters and
+        convert them directly into whether we include the block or
+        not. Peacock will write out the "inactive" parameter for
+        those blocks that are deselected and we don't want to have
+        any problems with existing active or inactive parameters.
+        Input:
+            input_node[hit.Node]: Input node to read parameters from
+            path[str]: Full path of the input_node
+        Return:
+            list[str]: Children of this node that are active
+        """
+        active = []
+        for child_node in input_node.children(node_type=hit.NodeType.Section):
+            active.append(child_node.path())
+
+        for param_node in input_node.children(node_type=hit.NodeType.Field):
+            param_info = self.getParamInfo(path, param_node.path())
+            if not param_info:
+                # must be a user added param
+                param_info = self.addUserParam(path, param_node.path(), param_node.raw())
+            else:
+                param_info.value = param_node.raw()
+            if param_info.name == "active":
+                active = param_info.value.split()
+                param_info.parent.removeUserParam("active", True)
+            elif param_info.name == "inactive":
+                for inactive in param_info.value.split():
+                    try:
+                        active.remove(inactive)
+                    except ValueError:
+                        pass
+                # We don't want to write this out by default
+                param_info.parent.removeUserParam("inactive", True)
+            else:
+                param_info.set_in_input_file = True
+                param_info.parent.changed_by_user = True
+                if param_info.name not in param_info.parent.parameters_write_first:
+                    param_info.parent.parameters_write_first.append(param_info.name)
+                param_info.comments = self._getComments(param_node)
+        return active
+
+    def _addInputFileNode(self, input_node, included):
         """
         This adds a node from the input file.
         Input:
-            input_node[GPNode]: The node from the input file.
+            input_node[hit.Node]: The node from the input file.
         """
-        path = input_node.fullName(no_root=True)
+        path = "/" + input_node.fullpath()
         entry = self.path_map.get(path)
         if not entry:
             parent_path = os.path.dirname(path)
@@ -95,38 +189,27 @@ class InputTree(object):
             entry = self.addUserBlock(parent_path, name)
             if not entry:
                 mooseutils.mooseWarning("Could not create %s" % path)
+                self.input_has_errors = True
                 return
 
-        entry.comments = "\n".join(input_node.comments)
-        entry.included = True
+        entry.comments = self._getComments(input_node)
+        entry.included = included
         entry.hard = True
 
-        in_type_name = input_node.params.get("type")
+        in_type = input_node.find("type")
         param_info = entry.parameters.get("type")
-        if in_type_name and param_info:
-            entry.setBlockType(in_type_name)
-            param_info.value = in_type_name
+        if in_type and in_type.raw() and param_info:
+            entry.setBlockType(in_type.raw())
+            param_info.value = in_type.raw()
             if "type" not in entry.parameters_list:
                 entry.parameters_list.insert(0, "type")
 
-        for param_name in input_node.params_list:
-            param_value = input_node.params[param_name]
-            param_info = self.getParamInfo(path, param_name)
-            if not param_info:
-                # must be a user added param
-                param_info = self.addUserParam(path, param_name, param_value)
-            else:
-                param_info.value = param_value
-            param_info.set_in_input_file = True
-            if param_info.name not in param_info.parent.parameters_write_first:
-                param_info.parent.parameters_write_first.append(param_info.name)
-            param_info.comments = input_node.param_comments.get(param_name, "")
+        active = self._readParameters(input_node, path)
 
-        for child_name in input_node.children_list:
-            child_node = input_node.children[child_name]
-            self._addInputFileNode(child_node)
-            if child_name not in entry.children_write_first:
-                entry.children_write_first.append(child_name)
+        for child_node in input_node.children(node_type=hit.NodeType.Section):
+            self._addInputFileNode(child_node, child_node.path() in active)
+            if child_node.path() not in entry.children_write_first:
+                entry.children_write_first.append(child_node.path())
 
     def getInputFileString(self):
         """
@@ -134,9 +217,13 @@ class InputTree(object):
         Return:
             str of the entire input file.
         """
+        if not self.root:
+            return ""
         return InputTreeWriter.inputTreeToString(self.root)
 
     def addUserBlock(self, parent, name):
+        if not parent:
+            parent = "/"
         info = self.path_map.get(parent)
         if info and info.star_node:
             block = self._copyNode(info.path, info, info.star_node, name)
@@ -213,6 +300,30 @@ class InputTree(object):
         pinfo = self.path_map.get(path)
         if pinfo:
             pinfo.parent.moveChildBlock(pinfo.name, new_index)
+
+    def incompatibleChanges(self, app_info):
+        """
+        Tries to detect if there are any incompatible changes
+        in the syntax with the current working input file.
+        Input:
+            app_info[ExecutableInfo]: The executable info to compare against
+        Return:
+            bool: True if errors occurred loading the current input file with the new syntax
+        """
+
+        if not self.app_info.json_data:
+            return False
+        if self.app_info.json_data and not app_info.json_data:
+            return True
+
+        try:
+            old_input = self.getInputFileString()
+            new_tree = InputTree(app_info)
+            read_data = new_tree.setInputFileData(old_input)
+            return not read_data or new_tree.input_has_errors
+        except Exception as e:
+            mooseutils.mooseWarning("Caught exception: %s" % e)
+            return True
 
 if __name__ == '__main__':
     import sys

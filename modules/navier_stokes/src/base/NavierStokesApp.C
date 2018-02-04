@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "NavierStokesApp.h"
 #include "Moose.h"
 #include "AppFactory.h"
@@ -108,53 +111,6 @@
 // Functions
 #include "WedgeFunction.h"
 
-// CNSFV (Compressible Navier-Stokes by Finite Volume)
-#include "CNSFVMachIC.h"
-#include "CNSFVPressureIC.h"
-
-#include "CNSFVNoSlopeReconstruction.h"
-#include "CNSFVGreenGaussSlopeReconstruction.h"
-#include "CNSFVLeastSquaresSlopeReconstruction.h"
-#include "CNSFVSlopeReconstructionOneD.h"
-#include "CNSFVNoSlopeLimiting.h"
-#include "CNSFVMinmaxSlopeLimiting.h"
-#include "CNSFVWENOSlopeLimiting.h"
-#include "CNSFVSlopeLimitingOneD.h"
-#include "CNSFVHLLCInternalSideFlux.h"
-#include "CNSFVFreeInflowBoundaryFlux.h"
-#include "CNSFVFreeOutflowBoundaryFlux.h"
-#include "CNSFVRiemannInvariantBoundaryFlux.h"
-#include "CNSFVHLLCInflowOutflowBoundaryFlux.h"
-#include "CNSFVHLLCSlipBoundaryFlux.h"
-#include "CNSFVFreeInflowBCUserObject.h"
-#include "CNSFVFreeOutflowBCUserObject.h"
-#include "CNSFVCharacteristicBCUserObject.h"
-#include "CNSFVRiemannInvariantBCUserObject.h"
-#include "CNSFVSlipBCUserObject.h"
-
-#include "CNSFVBC.h"
-
-#include "CNSFVKernel.h"
-
-#include "CNSFVMaterial.h"
-
-#include "CNSFVEntropyProductionAux.h"
-#include "CNSFVMachAux.h"
-#include "CNSFVPressureAux.h"
-#include "CNSFVSpecificTotalEnthalpyAux.h"
-
-#include "CNSFVIdealGasEntropyL2Error.h"
-#include "CNSFVIdealGasTotalEnthalpyL2Error.h"
-#include "CNSFVTimeStepLimit.h"
-
-//
-// Scalar Advection-diffusion-reaction
-//
-
-#include "AdvectionSUPG.h"
-#include "BodyForceSUPG.h"
-#include "Advection.h"
-
 template <>
 InputParameters
 validParams<NavierStokesApp>()
@@ -172,6 +128,9 @@ NavierStokesApp::NavierStokesApp(InputParameters parameters) : MooseApp(paramete
   Moose::associateSyntax(_syntax, _action_factory);
   NavierStokesApp::associateSyntaxDepends(_syntax, _action_factory);
   NavierStokesApp::associateSyntax(_syntax, _action_factory);
+
+  Moose::registerExecFlags(_factory);
+  NavierStokesApp::registerExecFlags(_factory);
 }
 
 NavierStokesApp::~NavierStokesApp() {}
@@ -295,50 +254,6 @@ NavierStokesApp::registerObjects(Factory & factory)
 
   // Functions
   registerFunction(WedgeFunction);
-
-  // CNSFV
-  registerInitialCondition(CNSFVMachIC);
-  registerInitialCondition(CNSFVPressureIC);
-
-  registerUserObject(CNSFVNoSlopeReconstruction);
-  registerUserObject(CNSFVGreenGaussSlopeReconstruction);
-  registerUserObject(CNSFVLeastSquaresSlopeReconstruction);
-  registerUserObject(CNSFVSlopeReconstructionOneD);
-  registerUserObject(CNSFVNoSlopeLimiting);
-  registerUserObject(CNSFVMinmaxSlopeLimiting);
-  registerUserObject(CNSFVWENOSlopeLimiting);
-  registerUserObject(CNSFVSlopeLimitingOneD);
-  registerUserObject(CNSFVHLLCInternalSideFlux);
-  registerUserObject(CNSFVFreeInflowBoundaryFlux);
-  registerUserObject(CNSFVFreeOutflowBoundaryFlux);
-  registerUserObject(CNSFVRiemannInvariantBoundaryFlux);
-  registerUserObject(CNSFVHLLCInflowOutflowBoundaryFlux);
-  registerUserObject(CNSFVHLLCSlipBoundaryFlux);
-  registerUserObject(CNSFVFreeInflowBCUserObject);
-  registerUserObject(CNSFVFreeOutflowBCUserObject);
-  registerUserObject(CNSFVCharacteristicBCUserObject);
-  registerUserObject(CNSFVRiemannInvariantBCUserObject);
-  registerUserObject(CNSFVSlipBCUserObject);
-
-  registerBoundaryCondition(CNSFVBC);
-
-  registerKernel(CNSFVKernel);
-
-  registerMaterial(CNSFVMaterial);
-
-  registerAux(CNSFVEntropyProductionAux);
-  registerAux(CNSFVMachAux);
-  registerAux(CNSFVPressureAux);
-  registerAux(CNSFVSpecificTotalEnthalpyAux);
-
-  registerPostprocessor(CNSFVIdealGasEntropyL2Error);
-  registerPostprocessor(CNSFVIdealGasTotalEnthalpyL2Error);
-  registerPostprocessor(CNSFVTimeStepLimit);
-
-  // Scalar advection-diffusion-reaction
-  registerKernel(AdvectionSUPG);
-  registerKernel(BodyForceSUPG);
-  registerKernel(Advection);
 }
 
 void
@@ -390,4 +305,15 @@ NavierStokesApp::associateSyntax(Syntax & syntax, ActionFactory & action_factory
 
 #undef registerAction
 #define registerAction(type, action) action_factory.regLegacy<type>(stringifyName(type), action)
+}
+
+// External entry point for dynamic execute flag registration
+extern "C" void
+NavierStokesApp__registerExecFlags(Factory & factory)
+{
+  NavierStokesApp::registerExecFlags(factory);
+}
+void
+NavierStokesApp::registerExecFlags(Factory & /*factory*/)
+{
 }

@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWPOROSITYHM_H
 #define POROUSFLOWPOROSITYHM_H
@@ -18,7 +20,8 @@ InputParameters validParams<PorousFlowPorosityHM>();
 
 /**
  * Material designed to provide the porosity in hydro-mechanical simulations
- * biot + (phi0 - biot)*exp(-vol_strain + (biot-1)effective_porepressure/solid_bulk)
+ * biot + (phi0 - biot)*exp(-vol_strain +
+ * (biot-1)*(effective_porepressure-reference_pressure)/solid_bulk)
  */
 class PorousFlowPorosityHM : public PorousFlowPorosityExponentialBase
 {
@@ -43,6 +46,9 @@ protected:
 
   /// short-hand number (biot-1)/solid_bulk
   const Real _coeff;
+
+  /// reference porepressure
+  const VariableValue & _p_reference;
 
   /// number of displacement variables
   const unsigned int _ndisp;

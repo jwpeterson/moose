@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "Transient.h"
 
@@ -24,6 +19,9 @@
 #include "NonlinearSystem.h"
 #include "Control.h"
 #include "TimePeriod.h"
+#include "MooseMesh.h"
+#include "AllLocalDofIndicesThread.h"
+#include "TimeIntegrator.h"
 
 #include "libmesh/implicit_system.h"
 #include "libmesh/nonlinear_implicit_system.h"
@@ -112,13 +110,22 @@ validParams<Transient>()
                         "performed based on the Master app's nonlinear "
                         "residual.");
 
+  params.addParam<Real>("relaxation_factor",
+                        1.0,
+                        "Fraction of newly computed value to keep."
+                        "Set between 0 and 2.");
+  params.addParam<std::vector<std::string>>("relaxed_variables",
+                                            std::vector<std::string>(),
+                                            "List of variables to relax during Picard Iteration");
+
   params.addParamNamesToGroup("start_time dtmin dtmax n_startup_steps trans_ss_check ss_check_tol "
                               "ss_tmin abort_on_solve_fail timestep_tolerance use_multiapp_dt",
                               "Advanced");
 
   params.addParamNamesToGroup("time_periods time_period_starts time_period_ends", "Time Periods");
 
-  params.addParamNamesToGroup("picard_max_its picard_rel_tol picard_abs_tol", "Picard");
+  params.addParamNamesToGroup(
+      "picard_max_its picard_rel_tol picard_abs_tol relaxation_factor relaxed_variables", "Picard");
 
   params.addParam<bool>("verbose", false, "Print detailed diagnostics on timestep calculation");
   params.addParam<unsigned int>(
@@ -132,6 +139,7 @@ validParams<Transient>()
 Transient::Transient(const InputParameters & parameters)
   : Executioner(parameters),
     _problem(_fe_problem),
+    _nl(_fe_problem.getNonlinearSystemBase()),
     _time_scheme(getParam<MooseEnum>("scheme").getEnum<Moose::TimeIntegratorType>()),
     _t_step(_problem.timeStep()),
     _time(_problem.time()),
@@ -173,9 +181,11 @@ Transient::Transient(const InputParameters & parameters)
     _picard_rel_tol(getParam<Real>("picard_rel_tol")),
     _picard_abs_tol(getParam<Real>("picard_abs_tol")),
     _verbose(getParam<bool>("verbose")),
-    _sln_diff(_problem.getNonlinearSystemBase().addVector("sln_diff", false, PARALLEL))
+    _sln_diff(_nl.addVector("sln_diff", false, PARALLEL)),
+    _relax_factor(getParam<Real>("relaxation_factor")),
+    _relaxed_vars(getParam<std::vector<std::string>>("relaxed_variables"))
 {
-  _problem.getNonlinearSystemBase().setDecomposition(_splitting);
+  _nl.setDecomposition(_splitting);
   _t_step = 0;
   _dt = 0;
   _next_interval_output_time = 0.0;
@@ -203,6 +213,19 @@ Transient::Transient(const InputParameters & parameters)
     if (_num_steps == 0) // Always do one step in the first half
       _num_steps = 1;
   }
+
+  // Set up relaxation
+  if (_relax_factor != 1.0)
+  {
+    if (_relax_factor >= 2.0 || _relax_factor <= 0.0)
+      mooseError("The Picard iteration relaxation factor should be between 0.0 and 2.0");
+
+    // Store a copy of the previous solution here
+    _nl.addVector("relax_previous", false, PARALLEL);
+  }
+  // This lets us know if we are at Picard iteration > 0, works for both master- AND sub-app.
+  // Initialize such that _prev_time != _time for the first Picard iteration
+  _prev_time = _time - 1.0;
 }
 
 void
@@ -211,6 +234,7 @@ Transient::init()
   if (!_time_stepper.get())
   {
     InputParameters pars = _app.getFactory().getValidParams("ConstantDT");
+    pars.set<SubProblem *>("_subproblem") = &_problem;
     pars.set<FEProblemBase *>("_fe_problem_base") = &_problem;
     pars.set<Transient *>("_executioner") = this;
 
@@ -253,6 +277,11 @@ Transient::init()
     //  _dt = computeConstrainedDT();
     _dt = getDT();
   }
+  if (_dt == 0)
+    mooseError("Initial time step size is not evaluated properly");
+
+  if (!_app.isRecovering())
+    _nl.getTimeIntegrator()->init();
 }
 
 void
@@ -304,7 +333,10 @@ Transient::execute()
   }
 
   if (!_app.halfTransient())
+  {
     _problem.outputStep(EXEC_FINAL);
+    _problem.execute(EXEC_FINAL);
+  }
 
   // This method is to finalize anything else we want to do on the problem side.
   _problem.postExecute();
@@ -399,7 +431,8 @@ Transient::solveStep(Real input_dt)
 
   Real current_dt = _dt;
 
-  _problem.onTimestepBegin();
+  if (_picard_it == 0)
+    _problem.onTimestepBegin();
 
   // Increment time
   _time = _time_old + _dt;
@@ -442,7 +475,42 @@ Transient::solveStep(Real input_dt)
   // Update warehouse active objects
   _problem.updateActiveObjects();
 
+  // Prepare to relax variables.
+  // _prev_time == _time is like _picard_it > 0, but it also works for the sub-app
+  if (_prev_time == _time && _relax_factor != 1.0)
+  {
+    NumericVector<Number> & solution = _nl.solution();
+    NumericVector<Number> & relax_previous = _nl.getVector("relax_previous");
+
+    // Save off the current solution
+    relax_previous = solution;
+
+    // Snag all of the local dof indices for all of these variables
+    System & libmesh_nl_system = _nl.system();
+    AllLocalDofIndicesThread aldit(libmesh_nl_system, _relaxed_vars);
+    ConstElemRange & elem_range = *_fe_problem.mesh().getActiveLocalElementRange();
+    Threads::parallel_reduce(elem_range, aldit);
+
+    _relaxed_dofs = aldit._all_dof_indices;
+  }
+
   _time_stepper->step();
+
+  // Relax the "relaxed_variables" if this is not the first Picard iteration of the timestep.
+  // _prev_time == _time is like _picard_it > 0, but it also works for the sub-app
+  if (_prev_time == _time && _relax_factor != 1.0)
+  {
+    NumericVector<Number> & solution = _nl.solution();
+    NumericVector<Number> & relax_previous = _nl.getVector("relax_previous");
+    for (const auto & dof : _relaxed_dofs)
+      solution.set(dof,
+                   (relax_previous(dof) * (1.0 - _relax_factor)) + (solution(dof) * _relax_factor));
+    solution.close();
+    _nl.update();
+  }
+  // This keeps track of Picard iteration, even if this is the sub-app.
+  // It is used for relaxation logic
+  _prev_time = _time;
 
   // We know whether or not the nonlinear solver thinks it converged, but we need to see if the
   // executioner concurs
@@ -498,21 +566,28 @@ Transient::solveStep(Real input_dt)
 
     _console << "Picard Norm after TIMESTEP_END MultiApps: " << _picard_timestep_end_norm << '\n';
 
-    Real max_norm = std::max(_picard_timestep_begin_norm, _picard_timestep_end_norm);
-
-    Real max_relative_drop = max_norm / _picard_initial_norm;
-
-    if (max_norm < _picard_abs_tol || max_relative_drop < _picard_rel_tol)
+    if (picardConverged())
     {
       _console << "Picard converged!" << std::endl;
 
       _picard_converged = true;
+      _time_stepper->acceptStep();
       return;
     }
   }
 
   _dt = current_dt; // _dt might be smaller than this at this point for multistep methods
   _time = _time_old;
+}
+
+bool
+Transient::picardConverged() const
+{
+  Real max_norm = std::max(_picard_timestep_begin_norm, _picard_timestep_end_norm);
+
+  Real max_relative_drop = max_norm / _picard_initial_norm;
+
+  return (max_norm < _picard_abs_tol || max_relative_drop < _picard_rel_tol);
 }
 
 void
@@ -529,6 +604,8 @@ Transient::endStep(Real input_time)
 
   if (_last_solve_converged && !_xfem_repeat_step)
   {
+    _nl.getTimeIntegrator()->postStep();
+
     // Compute the Error Indicators and Markers
     _problem.computeIndicators();
     _problem.computeMarkers();
@@ -647,7 +724,7 @@ Transient::keepGoing()
     else // Keep going
     {
       // Update solution norm for next time step
-      _old_time_solution_norm = _problem.getNonlinearSystemBase().currentSolution()->l2_norm();
+      _old_time_solution_norm = _nl.currentSolution()->l2_norm();
       // Print steady-state relative error norm
       _console << "Steady-State Relative Differential Norm: " << _sln_diff_norm << std::endl;
     }
@@ -690,6 +767,8 @@ void
 Transient::postExecute()
 {
   _time_stepper->postExecute();
+
+  _problem.execute(EXEC_FINAL);
 }
 
 void
@@ -741,7 +820,7 @@ Transient::setupTimeIntegrator()
         ti_str = "ExplicitTVDRK2";
         break;
       default:
-        mooseError("Unknown scheme");
+        mooseError("Unknown scheme: ", _time_scheme);
         break;
     }
 
@@ -765,9 +844,8 @@ Transient::getTimeStepperName()
 Real
 Transient::relativeSolutionDifferenceNorm()
 {
-  const NumericVector<Number> & current_solution =
-      *_problem.getNonlinearSystemBase().currentSolution();
-  const NumericVector<Number> & old_solution = _problem.getNonlinearSystemBase().solutionOld();
+  const NumericVector<Number> & current_solution = *_nl.currentSolution();
+  const NumericVector<Number> & old_solution = _nl.solutionOld();
 
   _sln_diff = current_solution;
   _sln_diff -= old_solution;

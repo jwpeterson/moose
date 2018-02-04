@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef COUPLEABLE_H
 #define COUPLEABLE_H
@@ -21,6 +16,7 @@
 // Forward declarations
 class InputParameters;
 class MooseVariable;
+class MooseVariableScalar;
 class MooseObject;
 namespace libMesh
 {
@@ -314,6 +310,9 @@ protected:
   // Reference to the interface's input parameters
   const InputParameters & _c_parameters;
 
+  /// The name of the object this interface is part of
+  const std::string & _c_name;
+
   // Reference to FEProblemBase
   FEProblemBase & _c_fe_problem;
 
@@ -324,13 +323,13 @@ protected:
   std::vector<MooseVariable *> _coupled_moose_vars;
 
   /// True if we provide coupling to nodal values
-  bool _nodal;
+  bool _c_nodal;
 
   /// True if implicit value is required
   bool _c_is_implicit;
 
-  /// Local InputParameters
-  const InputParameters & _coupleable_params;
+  /// Thread ID of the thread using this object
+  THREAD_ID _c_tid;
 
   /// Will hold the default value for optional coupled variables.
   std::map<std::string, VariableValue *> _default_value;
@@ -343,6 +342,22 @@ protected:
 
   /// This will always be zero because the default values for optionally coupled variables is always constant
   VariableSecond _default_second;
+
+  /// Zero value of a variable
+  const VariableValue & _zero;
+  /// Zero gradient of a variable
+  const VariableGradient & _grad_zero;
+  /// Zero second derivative of a variable
+  const VariableSecond & _second_zero;
+  /// Zero second derivative of a test function
+  const VariablePhiSecond & _second_phi_zero;
+
+  /**
+   * Check that the right kind of variable is being coupled in
+   *
+   * @param var_name The name of the coupled variable
+   */
+  void checkVar(const std::string & var_name);
 
   /**
    * Extract pointer to a coupled variable
@@ -376,6 +391,9 @@ private:
 
   /// Unique indices for optionally coupled vars that weren't provided
   std::map<std::string, unsigned int> _optional_var_index;
+
+  /// Scalar variables coupled into this object (for error checking)
+  std::map<std::string, std::vector<MooseVariableScalar *>> _c_coupled_scalar_vars;
 };
 
 #endif /* COUPLEABLE_H */

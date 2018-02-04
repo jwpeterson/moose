@@ -1,9 +1,11 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef CO2FLUIDPROPERTIES_H
 #define CO2FLUIDPROPERTIES_H
@@ -25,6 +27,17 @@ InputParameters validParams<CO2FluidProperties>();
  * Note: the Span and Wagner EOS uses density and temperature as the primary variables. As
  * a result, density must first be found using iteration, after which the other properties
  * can be calculated directly.
+ *
+ * Viscosity from:
+ * Fenghour et al., The viscosity of carbon dioxide, J. Phys. Chem. Ref.Data,
+ * 27, 31-44 (1998)
+ * Note: critical enhancement not included
+ * Valid for 217 K < T < 1000K and rho < 1400 kg/m^3
+ *
+ * Thermal conductivity from:
+ * Scalabrin et al., A Reference Multiparameter Thermal Conductivity
+ * Equation for Carbon Dioxide with an Optimized Functional Form, J. Phys.
+ * Chem. Ref. Data 35 (2006)
  */
 class CO2FluidProperties : public SinglePhaseFluidPropertiesPT
 {
@@ -32,75 +45,27 @@ public:
   CO2FluidProperties(const InputParameters & parameters);
   virtual ~CO2FluidProperties();
 
-  /**
-   * CO2 density
-   * From Span and Wagner (reference above)
-   * Note: density is calculated iteratively
-   *
-   * @param pressure fluid pressure (Pa)
-   * @param temperature fluid temperature (K)
-   * @return density (kg/m^3)
-   */
   virtual Real rho(Real pressure, Real temperature) const override;
 
-  /**
-   * CO2 density and derivatives wrt pressure and temperature
-   * From Span and Wagner (reference above)
-   * Note: density is calculated iteratively
-   *
-   * @param pressure fluid pressure (Pa)
-   * @param temperature fluid temperature (K)
-   * @param[out] rho density (kg/m^3)
-   * @param[out] drho_dp derivative of density wrt pressure
-   * @param[out] drho_dT derivative of density wrt temperature
-   */
   virtual void rho_dpT(
       Real pressure, Real temperature, Real & rho, Real & drho_dp, Real & drho_dT) const override;
 
-  /**
-   * CO2 viscosity
-   * From Fenghour et al., The viscosity of carbon dioxide, J. Phys. Chem. Ref.
-   * Data, 27, 31-44 (1998)
-   * Note: critical enhancement not included
-   * Valid for 217 K < T < 1000K and rho < 1400 kg/m^3
-   *
-   * @param density fluid density (kg/m^3)
-   * @param temperature fluid temperature (K)
-   * @return viscosity (Pa.s)
-   */
-  virtual Real mu(Real density, Real temperature) const override;
+  virtual Real mu(Real pressure, Real temperature) const override;
 
-  /**
-   * CO2 viscosity and derivatives wrt density and temperature
-   * From Fenghour et al., The viscosity of carbon dioxide, J. Phys. Chem. Ref.
-   * Data, 27, 31-44 (1998)
-   * Note: critical enhancement not included
-   * Valid for 217 K < T < 1000K and rho < 1400 kg/m^3
-   *
-   * @param density fluid density (kg/m^3)
-   * @param temperature fluid temperature (K)
-   * @param ddensity_dT derivative of density wrt temperature
-   * @param[out] mu viscosity (Pa.s)
-   * @param[out] dmu_drho derivative of viscosity wrt density
-   * @param[out] dmu_dT derivative of viscosity wrt temperature
-   */
-  virtual void mu_drhoT(Real density,
-                        Real temperature,
-                        Real ddensity_dT,
-                        Real & mu,
-                        Real & dmu_drho,
-                        Real & dmu_dT) const override;
+  virtual void
+  mu_dpT(Real pressure, Real temperature, Real & mu, Real & dmu_dp, Real & dmu_dT) const override;
 
-  /**
-   * Fluid name
-   * @return "co2"
-   */
+  virtual Real mu_from_rho_T(Real density, Real temperature) const override;
+
+  virtual void mu_drhoT_from_rho_T(Real density,
+                                   Real temperature,
+                                   Real ddensity_dT,
+                                   Real & mu,
+                                   Real & dmu_drho,
+                                   Real & dmu_dT) const override;
+
   virtual std::string fluidName() const override;
 
-  /**
-   * CO2 molar mass
-   * @return molar mass (kg/mol)
-   */
   Real molarMass() const override;
 
   /**
@@ -267,28 +232,8 @@ public:
    */
   Real d2phiSW_ddt(Real delta, Real tau) const;
 
-  /**
-   * Henry's law constant for dissolution of CO2 into water.
-   * From Guidelines on the Henry's constant and vapour
-   * liquid distribution constant for gases in H20 and D20 at high
-   * temperatures, IAPWS (2004).
-   *
-   * @param temperature fluid temperature (K)
-   * @return Henry's constant (Pa)
-   */
   virtual Real henryConstant(Real temperature) const override;
 
-  /**
-   * Henry's law constant for dissolution of CO2 into water and
-   * derivative wrt temperature.
-   * From Guidelines on the Henry's constant and vapour
-   * liquid distribution constant for gases in H20 and D20 at high
-   * temperatures, IAPWS (2004).
-   *
-   * @param temperature fluid temperature (K)
-   * @param[out] Kh Henry's constant (Pa)
-   * @param[out] dKh_dT derivative of Henry's constant wrt temperature
-   */
   virtual void henryConstant_dT(Real temperature, Real & Kh, Real & dKh_dT) const override;
 
   /**
@@ -300,20 +245,10 @@ public:
    */
   Real partialDensity(Real temperature) const;
 
-  /**
-   * Internal energy
-   * From Span and Wagner (reference above)
-   *
-   * @param pressure fluid pressure (Pa)
-   * @param temperature fluid temperature (K)
-   * @return internal energy (J/kg)
-   */
   virtual Real e(Real pressure, Real temperature) const override;
-  /// Internal energy and its derivatives wrt pressure and temperature
 
   virtual void
   e_dpT(Real pressure, Real temperature, Real & e, Real & de_dp, Real & de_dT) const override;
-  /// Density and internal energy from pressure and temperature and derivatives wrt pressure and temperature
 
   virtual void rho_e_dpT(Real pressure,
                          Real temperature,
@@ -323,77 +258,30 @@ public:
                          Real & e,
                          Real & de_dp,
                          Real & de_dT) const override;
-  /// Speed of sound (m/s)
 
   virtual Real c(Real pressure, Real temperature) const override;
 
-  /**
-   * Isobaric specific heat capacity
-   * From Span and Wagner (reference above)
-   *
-   * @param pressure fluid pressure (Pa)
-   * @param temperature fluid temperature (K)
-   * @return isobaric specific heat capacity (J/kg/K)
-   */
   virtual Real cp(Real pressure, Real temperature) const override;
 
-  /**
-   * Isochoric specific heat capacity
-   * From Span and Wagner (reference above)
-   *
-   * @param pressure fluid pressure (Pa)
-   * @param temperature fluid temperature (K)
-   * @return isochoric specific heat capacity (J/kg/K)
-   */
   virtual Real cv(Real pressure, Real temperature) const override;
 
-  /**
-   * Thermal conductivity
-   * From Scalabrin et al., A Reference Multiparameter Thermal Conductivity
-   * Equation for Carbon Dioxide with an Optimized Functional Form, J. Phys.
-   * Chem. Ref. Data 35 (2006)
-   *
-   * @param density CO2 density (kg/m^3)
-   * @param temperature CO2 temperature (K)
-   * @return thermal conductivity (W/m/K)
-   */
-  virtual Real k(Real density, Real temperature) const override;
+  virtual Real k(Real pressure, Real temperature) const override;
 
-  /**
-   * Specific entropy
-   * From Span and Wagner (reference above)
-   *
-   * @param pressure fluid pressure (Pa)
-   * @param temperature fluid temperature (K)
-   * @return specific entropy (J/kg/K)
-   */
+  virtual void
+  k_dpT(Real pressure, Real temperature, Real & k, Real & dk_dp, Real & dk_dT) const override;
+
+  virtual Real k_from_rho_T(Real density, Real temperature) const override;
+
   virtual Real s(Real pressure, Real temperature) const override;
 
-  /**
-   * Specific enthalpy
-   * From Span and Wagner (reference above)
-   *
-   * @param pressure fluid pressure (Pa)
-   * @param temperature fluid temperature (K)
-   * @return specific enthalpy (J/kg)
-   */
   virtual Real h(Real p, Real T) const override;
 
-  /// Specific enthalpy and its derivatives
   virtual void
   h_dpT(Real pressure, Real temperature, Real & h, Real & dh_dp, Real & dh_dT) const override;
 
-  /// Thermal expansion coefficient (-)
   virtual Real beta(Real pressure, Real temperature) const override;
 
 protected:
-  /**
-   * Constants used in the correlations. From
-   * Span and Wagner, "A New Equation of State for Carbon Dioxide Covering the Fluid Region
-   * from the Triple-Point Temperature to 1100K at Pressures up to 800 MPa",
-   * J. Phys. Chem. Ref. Data, 25 (1996)
-   */
-
   /// Molar mass of CO2 (kg/mol)
   const Real _Mco2 = 44.0098e-3;
   /// Critical pressure (Pa)

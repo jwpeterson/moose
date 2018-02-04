@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "MultiApp.h"
@@ -95,7 +90,7 @@ validParams<MultiApp>()
   params.addPrivateParam<MPI_Comm>("_mpi_comm");
 
   // Set the default execution time
-  params.set<MultiMooseEnum>("execute_on") = "timestep_begin";
+  params.set<ExecFlagEnum>("execute_on", true) = EXEC_TIMESTEP_BEGIN;
 
   params.addParam<unsigned int>("max_procs_per_app",
                                 std::numeric_limits<unsigned int>::max(),
@@ -145,7 +140,7 @@ MultiApp::MultiApp(const InputParameters & parameters)
   : MooseObject(parameters),
     SetupInterface(this),
     Restartable(parameters, "MultiApps"),
-    _fe_problem(*parameters.getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")),
+    _fe_problem(*getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")),
     _app_type(isParamValid("app_type") ? std::string(getParam<MooseEnum>("app_type"))
                                        : _fe_problem.getMooseApp().type()),
     _use_positions(getParam<bool>("use_positions")),
@@ -533,7 +528,7 @@ MultiApp::createApp(unsigned int i, Real start_time)
   app_params.set<std::shared_ptr<CommandLine>>("_command_line") = _app.commandLine();
   app_params.set<unsigned int>("_multiapp_level") = _app.multiAppLevel() + 1;
   app_params.set<unsigned int>("_multiapp_number") = _first_local_app + i;
-  _apps[i].reset(AppFactory::instance().create(_app_type, full_name, app_params, _my_comm));
+  _apps[i] = AppFactory::instance().createShared(_app_type, full_name, app_params, _my_comm);
   auto & app = _apps[i];
 
   std::string input_file = "";

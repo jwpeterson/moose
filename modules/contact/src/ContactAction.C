@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "ContactAction.h"
 
 #include "Factory.h"
@@ -68,7 +71,13 @@ validParams<ContactAction>()
   params.addParam<bool>("master_slave_jacobian",
                         true,
                         "Whether to include jacobian entries coupling master and slave nodes.");
+  params.addParam<Real>("al_penetration_tolerance",
+                        "The tolerance of the penetration for augmented Lagrangian method.");
+  params.addParam<Real>("al_incremental_slip_tolerance",
+                        "The tolerance of the incremental slip for augmented Lagrangian method.");
 
+  params.addParam<Real>("al_frictional_force_tolerance",
+                        "The tolerance of the frictional force for augmented Lagrangian method.");
   return params;
 }
 

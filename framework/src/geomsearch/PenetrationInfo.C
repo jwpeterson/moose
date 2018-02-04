@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "PenetrationInfo.h"
 #include "ArbitraryQuadrature.h"
@@ -66,6 +61,7 @@ PenetrationInfo::PenetrationInfo(const Node * node,
     _contact_force(0),
     _contact_force_old(0),
     _lagrange_multiplier(0),
+    _lagrange_multiplier_slip(0),
     _locked_this_step(0),
     _mech_status(MS_NO_CONTACT),
     _mech_status_old(MS_NO_CONTACT),
@@ -105,6 +101,8 @@ PenetrationInfo::PenetrationInfo(const PenetrationInfo & p)
     _contact_force(p._contact_force),
     _contact_force_old(p._contact_force_old),
     _lagrange_multiplier(p._lagrange_multiplier),
+    _lagrange_multiplier_slip(p._lagrange_multiplier_slip),
+
     _locked_this_step(p._locked_this_step),
     _mech_status(p._mech_status),
     _mech_status_old(p._mech_status_old),
@@ -143,6 +141,7 @@ PenetrationInfo::PenetrationInfo()
     _contact_force(0),
     _contact_force_old(0),
     _lagrange_multiplier(0),
+    _lagrange_multiplier_slip(0),
     _locked_this_step(0),
     _mech_status(MS_NO_CONTACT),
     _mech_status_old(MS_NO_CONTACT),
@@ -191,6 +190,7 @@ dataStore(std::ostream & stream, PenetrationInfo *& pinfo, void * context)
     storeHelper(stream, pinfo->_frictional_energy, context);
     storeHelper(stream, pinfo->_contact_force, context);
     storeHelper(stream, pinfo->_lagrange_multiplier, context);
+    storeHelper(stream, pinfo->_lagrange_multiplier_slip, context);
     storeHelper(stream, pinfo->_mech_status, context);
     storeHelper(stream, pinfo->_mech_status_old, context);
 
@@ -246,6 +246,7 @@ dataLoad(std::istream & stream, PenetrationInfo *& pinfo, void * context)
     loadHelper(stream, pinfo->_frictional_energy, context);
     loadHelper(stream, pinfo->_contact_force, context);
     loadHelper(stream, pinfo->_lagrange_multiplier, context);
+    loadHelper(stream, pinfo->_lagrange_multiplier_slip, context);
     loadHelper(stream, pinfo->_mech_status, context);
     loadHelper(stream, pinfo->_mech_status_old, context);
 

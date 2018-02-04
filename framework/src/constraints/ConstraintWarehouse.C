@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "ConstraintWarehouse.h"
 
@@ -78,7 +73,7 @@ ConstraintWarehouse::getActiveNodalConstraints() const
 }
 
 const std::vector<std::shared_ptr<NodeFaceConstraint>> &
-ConstraintWarehouse::getActiveNodeFaceConstraints(BoundaryID boundary_id, bool displaced)
+ConstraintWarehouse::getActiveNodeFaceConstraints(BoundaryID boundary_id, bool displaced) const
 {
   std::map<BoundaryID, MooseObjectWarehouse<NodeFaceConstraint>>::const_iterator it, end_it;
 
@@ -199,4 +194,12 @@ ConstraintWarehouse::subdomainsCovered(std::set<SubdomainID> & subdomains_covere
       subdomains_covered.insert(subdomains.begin(), subdomains.end());
     }
   }
+}
+
+void
+ConstraintWarehouse::residualEnd(THREAD_ID tid /* = 0*/) const
+{
+  checkThreadID(tid);
+  for (const auto & object : _active_objects[tid])
+    object->residualEnd();
 }

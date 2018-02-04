@@ -1,17 +1,11 @@
-
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef AUXGROUPEXECUTEMOOSEOBJECTWAREHOUSEBASE_H
 #define AUXGROUPEXECUTEMOOSEOBJECTWAREHOUSEBASE_H
@@ -38,7 +32,7 @@ public:
   /**
    * Constructor.
    */
-  AuxGroupExecuteMooseObjectWarehouse(bool thread = true);
+  AuxGroupExecuteMooseObjectWarehouse(const ExecFlagEnum & flags, bool thread = true);
 
   /**
    * Access the AuxGroup via bracket operator.
@@ -46,7 +40,7 @@ public:
   const ExecuteMooseObjectWarehouse<T> & operator[](Moose::AuxGroup group) const;
 
   /**
-   * Call this to separate the stored objects into the various AuxGroup catagories.
+   * Call this to separate the stored objects into the various AuxGroup categories.
    *
    * @see FEProblemBase::initialSetup()
    */
@@ -70,8 +64,10 @@ protected:
 };
 
 template <typename T>
-AuxGroupExecuteMooseObjectWarehouse<T>::AuxGroupExecuteMooseObjectWarehouse(bool threaded)
-  : ExecuteMooseObjectWarehouse<T>(threaded), _group_objects(3) // initialize group storage
+AuxGroupExecuteMooseObjectWarehouse<T>::AuxGroupExecuteMooseObjectWarehouse(
+    const ExecFlagEnum & flags, bool threaded)
+  : ExecuteMooseObjectWarehouse<T>(flags, threaded),
+    _group_objects(3, ExecuteMooseObjectWarehouse<T>(flags, threaded)) // initialize group storage
 {
 }
 
@@ -93,9 +89,9 @@ AuxGroupExecuteMooseObjectWarehouse<T>::updateDependObjects(
 {
   checkThreadID(tid);
 
-  constexpr std::uint16_t initial_flag_mask = static_cast<std::uint16_t>(EXEC_INITIAL);
-  constexpr std::uint16_t not_initial_flag_mask = ~static_cast<std::uint16_t>(EXEC_INITIAL);
-  constexpr std::uint16_t all_flags = std::numeric_limits<std::uint16_t>::max();
+  const std::uint16_t initial_flag_mask = static_cast<std::uint16_t>(EXEC_INITIAL);
+  const std::uint16_t not_initial_flag_mask = ~static_cast<std::uint16_t>(EXEC_INITIAL);
+  const std::uint16_t all_flags = std::numeric_limits<std::uint16_t>::max();
 
   for (const auto & object_ptr : _all_objects[tid])
   {
@@ -107,7 +103,9 @@ AuxGroupExecuteMooseObjectWarehouse<T>::updateDependObjects(
     }
 
     std::uint16_t remaining_flags = already_added ? not_initial_flag_mask : all_flags;
-    if (depend_aux.find(object_ptr->name()) != depend_aux.end() ||
+    if ((object_ptr->isParamValid("force_preaux") &&
+         object_ptr->template getParam<bool>("force_preaux")) ||
+        depend_aux.find(object_ptr->name()) != depend_aux.end() ||
         depend_ic.find(object_ptr->name()) != depend_ic.end())
       _group_objects[Moose::PRE_AUX].addObjectMask(object_ptr, tid, remaining_flags);
     else

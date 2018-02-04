@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "CheckOutputAction.h"
@@ -125,19 +120,10 @@ CheckOutputAction::checkPerfLogOutput()
     }
 
   // If a Console outputter is found then all the correct handling of performance logs are
-  //   handled within the object(s), so do nothing
+  // handled within the object(s), so do nothing
   if (!has_console)
   {
     Moose::perf_log.disable_logging();
-    Moose::setup_perf_log.disable_logging();
     libMesh::perflog.disable_logging();
-  }
-
-  // If the --timing option is used from the command-line, enable all logging
-  if (_app.getParam<bool>("timing"))
-  {
-    Moose::perf_log.enable_logging();
-    Moose::setup_perf_log.enable_logging();
-    libMesh::perflog.enable_logging();
   }
 }

@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "AppFactory.h"
 #include "CommandLine.h"
@@ -26,26 +21,6 @@ AppFactory::instance()
 
 AppFactory::~AppFactory() {}
 
-MooseApp *
-AppFactory::createApp(std::string app_type, int argc, char ** argv, MPI_Comm COMM_WORLD_IN)
-{
-  auto command_line = std::make_shared<CommandLine>(argc, argv);
-  InputParameters app_params = AppFactory::instance().getValidParams(app_type);
-
-  app_params.set<int>("_argc") = argc;
-  app_params.set<char **>("_argv") = argv;
-  app_params.set<std::shared_ptr<CommandLine>>("_command_line") = command_line;
-
-  MooseApp * app = AppFactory::instance().create(app_type, "main", app_params, COMM_WORLD_IN);
-  return app;
-}
-
-std::shared_ptr<MooseApp>
-AppFactory::createAppShared(const std::string & app_type, int argc, char ** argv)
-{
-  return std::shared_ptr<MooseApp>(createApp(app_type, argc, argv));
-}
-
 InputParameters
 AppFactory::getValidParams(const std::string & name)
 {
@@ -56,11 +31,27 @@ AppFactory::getValidParams(const std::string & name)
   return params;
 }
 
-MooseApp *
-AppFactory::create(const std::string & app_type,
-                   const std::string & name,
-                   InputParameters parameters,
-                   MPI_Comm COMM_WORLD_IN)
+MooseAppPtr
+AppFactory::createAppShared(const std::string & app_type,
+                            int argc,
+                            char ** argv,
+                            MPI_Comm comm_world_in)
+{
+  auto command_line = std::make_shared<CommandLine>(argc, argv);
+  auto app_params = AppFactory::instance().getValidParams(app_type);
+
+  app_params.set<int>("_argc") = argc;
+  app_params.set<char **>("_argv") = argv;
+  app_params.set<std::shared_ptr<CommandLine>>("_command_line") = command_line;
+
+  return AppFactory::instance().createShared(app_type, "main", app_params, comm_world_in);
+}
+
+MooseAppPtr
+AppFactory::createShared(const std::string & app_type,
+                         const std::string & name,
+                         InputParameters parameters,
+                         MPI_Comm comm_world_in)
 {
   // Error if the application type is not located
   if (_name_to_build_pointer.find(app_type) == _name_to_build_pointer.end())
@@ -72,7 +63,7 @@ AppFactory::create(const std::string & app_type,
   // Check to make sure that all required parameters are supplied
   parameters.checkParams("");
 
-  auto comm = std::make_shared<Parallel::Communicator>(COMM_WORLD_IN);
+  auto comm = std::make_shared<Parallel::Communicator>(comm_world_in);
 
   parameters.set<std::shared_ptr<Parallel::Communicator>>("_comm") = comm;
   parameters.set<std::string>("_app_name") = name;

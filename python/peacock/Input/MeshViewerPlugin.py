@@ -1,3 +1,12 @@
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 from peacock.ExodusViewer.plugins.VTKWindowPlugin import VTKWindowPlugin
 from peacock.utils import ExeLauncher
 from PyQt5.QtCore import pyqtSignal
@@ -39,11 +48,14 @@ class MeshViewerPlugin(VTKWindowPlugin):
         """
         self._use_test_objects = use_test_objs
 
-    def meshChanged(self, tree):
+    def meshChanged(self, tree, reset=False):
         """
         The parameters of the mesh has changed.
         We need to update the view of the mesh by generating a new mesh file.
         """
+        if reset:
+            self.reset()
+
         self.meshEnabled.emit(False)
         if not tree.app_info.valid():
             return

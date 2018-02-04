@@ -1,18 +1,14 @@
 #!/usr/bin/env python
 #pylint: disable=missing-docstring
-####################################################################################################
-#                                    DO NOT MODIFY THIS HEADER                                     #
-#                   MOOSE - Multiphysics Object Oriented Simulation Environment                    #
-#                                                                                                  #
-#                              (c) 2010 Battelle Energy Alliance, LLC                              #
-#                                       ALL RIGHTS RESERVED                                        #
-#                                                                                                  #
-#                            Prepared by Battelle Energy Alliance, LLC                             #
-#                               Under Contract No. DE-AC07-05ID14517                               #
-#                               With the U. S. Department of Energy                                #
-#                                                                                                  #
-#                               See COPYRIGHT for full restrictions                                #
-####################################################################################################
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 import os
 import unittest
 import MooseDocs
@@ -135,7 +131,7 @@ class TestMooseDocsImport(LogTestCase):
 
     def testFilename(self):
         items = moose_docs_import(include=['docs/content/utilities/moose_docs/*',
-                                           'docs/content/getting_started/*'],
+                                           'docs/content/getting_started/**'],
                                   exclude=['docs/content/utilities/memory_logger/*',
                                            'docs/**/moose_markdown/*'],
                                   base='docs/content',
@@ -154,7 +150,7 @@ class TestMooseDocsImport(LogTestCase):
                format(MooseDocs.ROOT_DIR)
         self.assertNotIn(gold, items)
 
-        gold = '{}/docs/content/getting_started/create_an_app.md'. \
+        gold = '{}/docs/content/getting_started/installation/create_an_app.md'. \
                format(MooseDocs.ROOT_DIR)
         self.assertIn(gold, items)
 

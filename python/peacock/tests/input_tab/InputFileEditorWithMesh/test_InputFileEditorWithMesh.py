@@ -1,4 +1,13 @@
 #!/usr/bin/env python
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
+
 from peacock.Input.InputFileEditorWithMesh import InputFileEditorWithMesh
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QApplication
 from peacock.Input.ExecutableInfo import ExecutableInfo
@@ -212,18 +221,20 @@ class Tests(BaseTests):
 
         b = tree.getBlockInfo("/AuxVariables")
         self.assertNotEqual(b, None)
+        self.assertEqual(b.included, False)
+        self.assertFalse(b.wantsToSave())
         w.InputFileEditorPlugin.block_tree.copyBlock(b)
+        self.assertEqual(b.included, True)
+        self.assertTrue(b.wantsToSave())
         self.assertEqual(w.InputFileEditorPlugin.has_changed, True)
         self.assertEqual(w.canClose(), False)
 
         mock_q.return_value = QMessageBox.Yes # The user wants to ignore changes
         self.assertEqual(w.canClose(), True)
 
+        new_block = "[AuxVariables]\n  [./New_0]\n  [../]\n[]\n\n"
         s = tree.getInputFileString()
-        self.assertEqual("", s) # AuxVariables isn't included
-        b.included = True
-        s = tree.getInputFileString()
-        self.assertEqual("[AuxVariables]\n  [./New_0]\n  [../]\n[]\n\n", s)
+        self.assertEqual(new_block, s)
 
     def testBlockHighlight(self):
         main_win, w = self.newWidget()

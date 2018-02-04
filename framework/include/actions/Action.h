@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef ACTION_H
 #define ACTION_H
@@ -43,7 +38,21 @@ public:
 
   virtual ~Action() {}
 
+  /**
+   * Method to add objects to the simulation or perform other setup tasks.
+   */
   virtual void act() = 0;
+
+  /**
+   * Method to add a relationship manager for the objects being added to the system. Relationship
+   * managers have to be added relatively early. In many cases before the Action::act() method
+   * is called.
+   * @param when_type The parameter indicating the normal time for adding either Geometric or
+   *        Algebraic RelationshipManagers. It may not always be possible to add your
+   *        RelationshipManager as early as you'd like. In these cases, your DistributedMesh may
+   *        consume more memory during the problem setup.
+   */
+  virtual void addRelationshipManagers(Moose::RelationshipManagerType when_type);
 
   /**
    * The name of the action
@@ -76,6 +85,16 @@ public:
   template <typename T>
   const T & getParam(const std::string & name) const;
   ///@}
+
+  /**
+   * Verifies that the requested parameter exists and is not NULL and returns it to the caller.
+   * The template parameter must be a pointer or an error will be thrown.
+   */
+  template <typename T>
+  T getCheckedPointerParam(const std::string & name, const std::string & error_string = "") const
+  {
+    return parameters().getCheckedPointerParam<T>(name, error_string);
+  }
 
   inline bool isParamValid(const std::string & name) const { return _pars.isParamValid(name); }
 

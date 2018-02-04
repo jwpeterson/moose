@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef PENETRATIONINFO_H
 #define PENETRATIONINFO_H
@@ -102,7 +97,10 @@ public:
   Real _frictional_energy_old;
   RealVectorValue _contact_force;
   RealVectorValue _contact_force_old;
+
   Real _lagrange_multiplier;
+  RealVectorValue _lagrange_multiplier_slip;
+
   unsigned int _locked_this_step;
   unsigned int _stick_locked_this_step;
   MECH_STATUS_ENUM _mech_status;

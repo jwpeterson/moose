@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "BrineFluidPropertiesTest.h"
 
@@ -75,14 +70,17 @@ TEST_F(BrineFluidPropertiesTest, properties)
   REL_TEST("density", _fp->rho(p1, T1, x1), 1065.58, 1.0e-2);
 
   // Viscosity
-  REL_TEST("viscosity", _fp->mu(_water_fp->rho(p0, T0), T0, x0), 679.8e-6, 2.0e-2);
-  REL_TEST("viscosity", _fp->mu(_water_fp->rho(p0, T1), T1, x0), 180.0e-6, 2.0e-2);
-  REL_TEST("viscosity", _fp->mu(_water_fp->rho(p1, T1), T1, x1), 263.1e-6, 2.0e-2);
+  REL_TEST("viscosity", _fp->mu_from_rho_T(_water_fp->rho(p0, T0), T0, x0), 679.8e-6, 2.0e-2);
+  REL_TEST("viscosity", _fp->mu_from_rho_T(_water_fp->rho(p0, T1), T1, x0), 180.0e-6, 2.0e-2);
+  REL_TEST("viscosity", _fp->mu_from_rho_T(_water_fp->rho(p1, T1), T1, x1), 263.1e-6, 2.0e-2);
 
   // Thermal conductivity
-  REL_TEST("thermal conductivity", _fp->k(_water_fp->rho(p0, T0), T0, x0), 0.630, 4.0e-2);
-  REL_TEST("thermal conductivity", _fp->k(_water_fp->rho(p0, T1), T1, x0), 0.649, 4.0e-2);
-  REL_TEST("thermal conductivity", _fp->k(_water_fp->rho(p1, T1), T1, x1), 0.633, 4.0e-2);
+  REL_TEST(
+      "thermal conductivity", _fp->k_from_rho_T(_water_fp->rho(p0, T0), T0, x0), 0.630, 4.0e-2);
+  REL_TEST(
+      "thermal conductivity", _fp->k_from_rho_T(_water_fp->rho(p0, T1), T1, x0), 0.649, 4.0e-2);
+  REL_TEST(
+      "thermal conductivity", _fp->k_from_rho_T(_water_fp->rho(p1, T1), T1, x1), 0.633, 4.0e-2);
 
   // Enthalpy
   p0 = 10.0e6;
@@ -158,12 +156,14 @@ TEST_F(BrineFluidPropertiesTest, derivatives)
   // Viscosity
   Real drho = 1.0e-4;
 
-  Real dmu_drho_fd = (_fp->mu(rho + drho, T, x) - _fp->mu(rho - drho, T, x)) / (2.0 * drho);
-  Real dmu_dx_fd = (_fp->mu(rho, T, x + dx) - _fp->mu(rho, T, x - dx)) / (2.0 * dx);
+  Real dmu_drho_fd =
+      (_fp->mu_from_rho_T(rho + drho, T, x) - _fp->mu_from_rho_T(rho - drho, T, x)) / (2.0 * drho);
+  Real dmu_dx_fd =
+      (_fp->mu_from_rho_T(rho, T, x + dx) - _fp->mu_from_rho_T(rho, T, x - dx)) / (2.0 * dx);
   Real mu = 0.0, dmu_drho = 0.0, dmu_dT = 0.0, dmu_dx = 0.0;
   _fp->mu_drhoTx(rho, T, x, drho_dT, mu, dmu_drho, dmu_dT, dmu_dx);
 
-  ABS_TEST("mu", mu, _fp->mu(rho, T, x), 1.0e-15);
+  ABS_TEST("mu", mu, _fp->mu_from_rho_T(rho, T, x), 1.0e-15);
   REL_TEST("dmu_dp", dmu_drho, dmu_drho_fd, 1.0e-6);
   REL_TEST("dmu_dx", dmu_dx, dmu_dx_fd, 1.0e-6);
 
@@ -171,9 +171,9 @@ TEST_F(BrineFluidPropertiesTest, derivatives)
   // so that the change in density wrt temperature is included
   _fp->rho_dpTx(p, T, x, rho, drho_dp, drho_dT, drho_dx);
   _fp->mu_drhoTx(rho, T, x, drho_dT, mu, dmu_drho, dmu_dT, dmu_dx);
-  Real dmu_dT_fd =
-      (_fp->mu(_fp->rho(p, T + dT, x), T + dT, x) - _fp->mu(_fp->rho(p, T - dT, x), T - dT, x)) /
-      (2.0 * dT);
+  Real dmu_dT_fd = (_fp->mu_from_rho_T(_fp->rho(p, T + dT, x), T + dT, x) -
+                    _fp->mu_from_rho_T(_fp->rho(p, T - dT, x), T - dT, x)) /
+                   (2.0 * dT);
 
   REL_TEST("dmu_dT", dmu_dT, dmu_dT_fd, 1.0e-6);
 
@@ -199,7 +199,7 @@ TEST_F(BrineFluidPropertiesTest, derivatives)
   REL_TEST("de_dx", de_dx, de_dx_fd, 1.0e-3);
 
   // Viscosity
-  dmu_dx_fd = (_fp->mu(rho, T, x + dx) - _fp->mu(rho, T, x)) / dx;
+  dmu_dx_fd = (_fp->mu_from_rho_T(rho, T, x + dx) - _fp->mu_from_rho_T(rho, T, x)) / dx;
   _fp->mu_drhoTx(rho, T, x, drho_dT, mu, dmu_drho, dmu_dT, dmu_dx);
 
   REL_TEST("dmu_dx", dmu_dx, dmu_dx_fd, 1.0e-3);

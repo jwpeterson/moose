@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 //  This post processor calculates the J-Integral
 //
 #include "JIntegral.h"
@@ -16,6 +19,8 @@ InputParameters
 validParams<JIntegral>()
 {
   InputParameters params = validParams<ElementIntegralPostprocessor>();
+  params.addClassDescription("Calculates the J-integral at a specified point "
+                             " along the crack front");
   params.addRequiredParam<UserObjectName>("crack_front_definition",
                                           "The CrackFrontDefinition user object name");
   params.addParam<unsigned int>(
@@ -134,7 +139,7 @@ JIntegral::computeIntegral()
   FEType fe_type(Utility::string_to_enum<Order>("first"),
                  Utility::string_to_enum<FEFamily>("lagrange"));
   const unsigned int dim = _current_elem->dim();
-  UniquePtr<FEBase> fe(FEBase::build(dim, fe_type));
+  std::unique_ptr<FEBase> fe(FEBase::build(dim, fe_type));
   fe->attach_quadrature_rule(_qrule);
   _phi_curr_elem = &fe->get_phi();
   _dphi_curr_elem = &fe->get_dphi();

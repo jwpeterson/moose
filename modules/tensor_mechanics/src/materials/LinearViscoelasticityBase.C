@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "LinearViscoelasticityBase.h"
 #include "libmesh/quadrature.h"
 
@@ -123,7 +126,8 @@ LinearViscoelasticityBase::initQpStatefulProperties()
   _first_elasticity_tensor[_qp].zero();
   _apparent_creep_strain[_qp].zero();
 
-  _springs_elasticity_tensors[_qp].resize(_components, RankFourTensor());
+  _springs_elasticity_tensors[_qp].resize(
+      (_has_longterm_dashpot && _components > 0) ? _components - 1 : _components, RankFourTensor());
   _dashpot_viscosities[_qp].resize(_components, 0);
   _viscous_strains[_qp].resize(_components, RankTwoTensor());
 
@@ -173,9 +177,18 @@ LinearViscoelasticityBase::computeQpElasticityTensor()
 void
 LinearViscoelasticityBase::computeQpViscoelasticPropertiesInv()
 {
-  (*_first_elasticity_tensor_inv)[_qp] = _first_elasticity_tensor[_qp].invSymm();
+  if (MooseUtils::absoluteFuzzyEqual(_first_elasticity_tensor[_qp].L2norm(), 0.0))
+    (*_first_elasticity_tensor_inv)[_qp].zero();
+  else
+    (*_first_elasticity_tensor_inv)[_qp] = _first_elasticity_tensor[_qp].invSymm();
+
   for (unsigned int i = 0; i < _springs_elasticity_tensors[_qp].size(); ++i)
-    (*_springs_elasticity_tensors_inv)[_qp][i] = _springs_elasticity_tensors[_qp][i].invSymm();
+  {
+    if (MooseUtils::absoluteFuzzyEqual(_springs_elasticity_tensors[_qp][i].L2norm(), 0.0))
+      (*_springs_elasticity_tensors_inv)[_qp][i].zero();
+    else
+      (*_springs_elasticity_tensors_inv)[_qp][i] = _springs_elasticity_tensors[_qp][i].invSymm();
+  }
 }
 
 Real

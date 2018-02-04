@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "CavityPressureUserObject.h"
 
 template <>
@@ -11,6 +14,8 @@ InputParameters
 validParams<CavityPressureUserObject>()
 {
   InputParameters params = validParams<GeneralUserObject>();
+  params.addClassDescription("Uses the ideal gas law to compute internal pressure"
+                             "and an initial moles of gas quantity");
   params.addParam<Real>(
       "initial_pressure",
       0,
@@ -64,7 +69,12 @@ CavityPressureUserObject::getValue(const std::string & quantity) const
 {
   Real value = 0;
   if ("initial_moles" == quantity)
+  {
+    if (_n0 < 0.0)
+      mooseError("Negative number of moles calculated as an input for the cavity pressure");
+
     value = _n0;
+  }
   else if ("cavity_pressure" == quantity)
     value = _cavity_pressure;
   else

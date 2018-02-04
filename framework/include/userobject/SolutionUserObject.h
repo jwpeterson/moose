@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef SOLUTIONUSEROBJECT_H
 #define SOLUTIONUSEROBJECT_H
@@ -192,7 +187,7 @@ public:
   Real directValue(const Node * node, const std::string & var_name) const;
 
   /**
-   * Retrun a value from the centroid of an element
+   * Return a value from the centroid of an element
    * @param elem A pointer to the element at which a value is desired
    * @param var_name The variable from which to extract a value
    * @return The desired value for the given element and variable name
@@ -220,6 +215,12 @@ public:
     return MooseEnum("found_first=1 average=2 smallest_element_id=4 largest_element_id=8",
                      "found_first");
   }
+
+  /**
+   * Return the spatial dimension of the mesh file
+   * @return The spatial dimension of the mesh file
+   */
+  unsigned int getMeshFileDimension() const { return _mesh->spatial_dimension(); }
 
 protected:
   /**

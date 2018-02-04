@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // MOOSE includes
 #include "Material.h"
@@ -73,8 +68,8 @@ validParams<Material>()
 
 Material::Material(const InputParameters & parameters)
   : MooseObject(parameters),
-    BlockRestrictable(parameters),
-    BoundaryRestrictable(parameters, blockIDs(), false), // false for being _not_ nodal
+    BlockRestrictable(this),
+    BoundaryRestrictable(this, blockIDs(), false), // false for being _not_ nodal
     SetupInterface(this),
     Coupleable(this, false),
     MooseVariableDependencyInterface(),
@@ -88,18 +83,17 @@ Material::Material(const InputParameters & parameters)
     VectorPostprocessorInterface(this),
     DependencyResolverInterface(),
     Restartable(parameters, "Materials"),
-    ZeroInterface(parameters),
     MeshChangedInterface(parameters),
 
     // The false flag disables the automatic call buildOutputVariableHideList;
     // for Material objects the hide lists are handled by MaterialOutputAction
     OutputInterface(parameters, false),
     RandomInterface(parameters,
-                    *parameters.get<FEProblemBase *>("_fe_problem_base"),
+                    *parameters.getCheckedPointerParam<FEProblemBase *>("_fe_problem_base"),
                     parameters.get<THREAD_ID>("_tid"),
                     false),
-    _subproblem(*parameters.get<SubProblem *>("_subproblem")),
-    _fe_problem(*parameters.get<FEProblemBase *>("_fe_problem_base")),
+    _subproblem(*getCheckedPointerParam<SubProblem *>("_subproblem")),
+    _fe_problem(*getCheckedPointerParam<FEProblemBase *>("_fe_problem_base")),
     _tid(parameters.get<THREAD_ID>("_tid")),
     _assembly(_subproblem.assembly(_tid)),
     _bnd(_material_data_type != Moose::BLOCK_MATERIAL_DATA),

@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "EulerAngle2RGBAction.h"
 #include "Factory.h"
 #include "FEProblem.h"
@@ -72,7 +75,7 @@ EulerAngle2RGBAction::act()
       params.set<UserObjectName>("euler_angle_provider") =
           getParam<UserObjectName>("euler_angle_provider");
       params.set<UserObjectName>("grain_tracker") = getParam<UserObjectName>("grain_tracker");
-      params.set<MultiMooseEnum>("execute_on") = "initial timestep_end";
+      params.set<ExecFlagEnum>("execute_on") = {EXEC_INITIAL, EXEC_TIMESTEP_END};
       params.set<Point>("no_grain_color") = getParam<Point>("no_grain_color");
       _problem->addAuxKernel("EulerAngleProvider2RGBAux", var_name, params);
     }

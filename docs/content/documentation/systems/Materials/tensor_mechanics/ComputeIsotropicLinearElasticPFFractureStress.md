@@ -1,10 +1,10 @@
-# ComputeIsotropicLinearElasticPFFractureStress
+# Compute Isotropic Linear Elastic Phase Field Fracture Stress
 !syntax description /Materials/ComputeIsotropicLinearElasticPFFractureStress
 
 ##Description
 This material implements the phase field fracture model from Chakraborty et al., calculating the stress and the free energy derivatives required for the model. It works with the standard phase field kernels for nonconserved variables. In the model, a nonconserved order parameter $c$ defines the crack, where $c = 0$ in undamaged material and $c = 1$ in cracked material. Cracked material can sustain a compressive stress, but not a tensile one. $c$ evolves to minimize the elastic free energy of the system.
 
-This model assumes linear elastic mechanical deformation with an isotropic elasticity tensor, where $\lambda$ and $\mu$ are the first and second Lamé constants.
+This model assumes linear elastic mechanical deformation with an isotropic elasticity tensor, where $\lambda$ and $\mu$ are the first and second Lam&egrave; constants.
 
 ###Free energy definition
 The total strain energy density is defined as
@@ -24,10 +24,12 @@ The crack energy density is defined as
 where $l$ is the width of the crack interface and $g_c$ is a parameter related to the energy release rate.
 
 The total local free energy density is defined as
-\begin{eqnarray}
+\begin{equation}
+\begin{aligned}
 F &=& \Psi + \gamma \\
 &=&[(1-c)^2(1-k) + k] \Psi^{+} +\Psi^{-} + \frac{g_c}{2l}c^2 + \frac{g_c l}{2} {|{\nabla c}|}^2.
-\end{eqnarray}
+\end{aligned}
+\end{equation}
 
 ###Stress definition
 To be thermodynamically consistent, the stress is related to the deformation energy density according to
@@ -51,19 +53,23 @@ H = \max_t (\Psi^{+})
 \end{equation}
 
 Now, the total free energy is redefined as:
-\begin{eqnarray}
+\begin{equation}
+\begin{aligned}
 F &=& \left[ (1-c)^2(1-k) + k \right] H +\Psi^{-} + \frac{g_c}{2l}c^2 + \frac{g_c l}{2} {|{\nabla c}|}^2 \\
 &=& f_{loc} + \frac{g_c l}{2} {|{\nabla c}|}^2
-\end{eqnarray}
+\end{aligned}
+\end{equation}
 with
 \begin{equation}
 f_{loc} = \left[ (1-c)^2(1-k) + k \right] H +\Psi^{-} + \frac{g_c}{2l}c^2.
 \end{equation}
 Its derivatives are
-\begin{eqnarray}
+\begin{equation}
+\begin{aligned}
 \frac{\partial f_{loc}}{\partial c} &=& -2 (1-c)(1-k) H + 2 \frac{g_c}{2l} c\\
 \frac{\partial^2 f_{loc}}{\partial c^2} &=& 2 (1-k) H + 2 \frac{g_c}{2l}.
-\end{eqnarray}
+\end{aligned}
+\end{equation}
 
 The evolution equation for the damage parameter follows the Allen-Cahn equation
 \begin{equation}
@@ -72,6 +78,9 @@ The evolution equation for the damage parameter follows the Allen-Cahn equation
 where $ L = (g_c \eta)^{-1}$ and $\kappa = g_c l$.
 
 This equation follows the standard Allen-Cahn and thus can be implemented in MOOSE using the standard Allen-Cahn kernels, [TimeDerivative](/TimeDerivative.md), [AllenCahn](/AllenCahn), and [ACInterface](/ACInterface). There is now an action that automatically generates these kernels: NonconservedAction.
+
+## Example Input File Syntax
+!listing modules/combined/test/tests/phase_field_fracture/void2d_iso.i block=Materials/pf_elastic_energy
 
 !syntax parameters /Materials/ComputeIsotropicLinearElasticPFFractureStress
 

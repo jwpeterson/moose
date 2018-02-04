@@ -1,18 +1,14 @@
 #pylint: disable=missing-docstring
-####################################################################################################
-#                                    DO NOT MODIFY THIS HEADER                                     #
-#                   MOOSE - Multiphysics Object Oriented Simulation Environment                    #
-#                                                                                                  #
-#                              (c) 2010 Battelle Energy Alliance, LLC                              #
-#                                       ALL RIGHTS RESERVED                                        #
-#                                                                                                  #
-#                            Prepared by Battelle Energy Alliance, LLC                             #
-#                               Under Contract No. DE-AC07-05ID14517                               #
-#                               With the U. S. Department of Energy                                #
-#                                                                                                  #
-#                               See COPYRIGHT for full restrictions                                #
-####################################################################################################
+#* This file is part of the MOOSE framework
+#* https://www.mooseframework.org
+#*
+#* All rights reserved, see COPYRIGHT for full restrictions
+#* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+#*
+#* Licensed under LGPL 2.1, please see LICENSE for details
+#* https://www.gnu.org/licenses/lgpl-2.1.html
 #pylint: enable=missing-docstring
+
 import os
 import re
 import collections
@@ -34,10 +30,14 @@ class MooseClassDatabase(object):
         self.__repo_url = repo_url.rstrip('/')
         self.__definitions = dict()
 
+        exclude = [os.path.join('moose', 'libmesh'), 'libmesh', '.git', '.lib']
         for base, _, files in os.walk(MooseDocs.ROOT_DIR, topdown=False):
+            if any([base.startswith(os.path.join(MooseDocs.ROOT_DIR, sub)) for sub in exclude]):
+                continue
+
             for fname in files:
-                if fname.endswith('.h'):
-                    full_file = os.path.join(base, fname)
+                full_file = os.path.join(base, fname)
+                if fname.endswith('.h') and not os.path.islink(full_file):
                     self.__search(full_file)
 
     def __getitem__(self, value):

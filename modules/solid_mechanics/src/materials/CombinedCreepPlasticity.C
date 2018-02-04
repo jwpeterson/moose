@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "CombinedCreepPlasticity.h"
 
 #include "ReturnMappingModel.h"
@@ -98,7 +101,10 @@ CombinedCreepPlasticity::computeStress(const Elem & current_elem,
   // creep_strain = creep_strainOld + creep_strainIncrement
 
   if (_t_step == 0 && !_app.isRestarting())
+  {
+    _matl_timestep_limit[_qp] = std::numeric_limits<Real>::max();
     return;
+  }
 
   if (_output_iteration_info == true)
   {
@@ -176,7 +182,14 @@ CombinedCreepPlasticity::computeStress(const Elem & current_elem,
   for (unsigned i_rmm(0); i_rmm < num_submodels; ++i_rmm)
     _matl_timestep_limit[_qp] += 1.0 / rmm[i_rmm]->computeTimeStepLimit();
 
-  _matl_timestep_limit[_qp] = 1.0 / _matl_timestep_limit[_qp];
+  if (MooseUtils::absoluteFuzzyEqual(_matl_timestep_limit[_qp], 0.0))
+  {
+    _matl_timestep_limit[_qp] = std::numeric_limits<Real>::max();
+  }
+  else
+  {
+    _matl_timestep_limit[_qp] = 1.0 / _matl_timestep_limit[_qp];
+  }
 }
 
 bool

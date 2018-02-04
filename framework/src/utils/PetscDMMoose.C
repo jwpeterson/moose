@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 // This only works with petsc-3.3 and above.
 #include "libmesh/petsc_macro.h"
@@ -854,7 +849,7 @@ DMMooseGetEmbedding_Private(DM dm, IS * embedding)
             if (bc_id_set.find(boundary_id) == bc_id_set.end())
               continue;
 
-            UniquePtr<const Elem> side_bdry = elem_bdry->build_side_ptr(side, false);
+            std::unique_ptr<const Elem> side_bdry = elem_bdry->build_side_ptr(side, false);
             evindices.clear();
             dofmap.dof_indices(side_bdry.get(), evindices, v);
             for (const auto & edof : evindices)
@@ -1713,10 +1708,8 @@ DMMooseGetMeshBlocks_Private(DM dm, std::set<subdomain_id_type> & blocks)
   /* The following effectively is a verbatim copy of MeshBase::n_subdomains(). */
   // This requires an inspection on every processor
   libmesh_parallel_only(mesh.comm());
-  MeshBase::const_element_iterator el = mesh.active_elements_begin();
-  const MeshBase::const_element_iterator end = mesh.active_elements_end();
-  for (; el != end; ++el)
-    blocks.insert((*el)->subdomain_id());
+  for (const auto & elem : mesh.active_element_ptr_range())
+    blocks.insert(elem->subdomain_id());
   // Some subdomains may only live on other processors
   mesh.comm().set_union(blocks);
   PetscFunctionReturn(0);

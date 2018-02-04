@@ -1,16 +1,17 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef POROUSFLOWDICTATOR_H
 #define POROUSFLOWDICTATOR_H
 
 #include "GeneralUserObject.h"
 #include "Coupleable.h"
-#include "ZeroInterface.h"
 
 class PorousFlowDictator;
 
@@ -24,13 +25,51 @@ InputParameters validParams<PorousFlowDictator>();
  * well as the number of fluid phases and
  * the number of fluid components.
  *
+ * The Dictator performs sanity checks on all
+ * PorousFlow simulations and helps users
+ * rectify errors (for instance if parts of
+ * the input file suggest it is a 2-phase
+ * simulation, while other parts suggest it
+ * is 1-phase).
+ *
  * All PorousFlow Materials and Kernels calculate
  * and use derivatives with respect to all the variables
  * mentioned in this Object, at least in principal
  * (in practice they may be lazy and not compute
  * all derivatives).
  */
-class PorousFlowDictator : public GeneralUserObject, public Coupleable, public ZeroInterface
+
+/**
+                                  `  `:;@;:.:::#@@@'.`
+                           `    ,@;@@@@@@@@@@@@@@@@@@@@'';''``
+                     ,;@@@@@@@@@@@@T@@@@@H@@@@@E@@@@@@@@++@@@+:.:.`
+            '@@'@@@@@@@D@@@@@I@@@@@C@@@@@T@@@@@A@@@@@T@@@@@O@@@@@R@@@@@@..`
+     `..,;@@@@@@@@@@@@@@@@@@@@@@@@@@@@I@@@@@S@@@@@@@@@@@@@@@@@@@@@@@@@@@;.
+ .:@@@@@@@@@@@@@@@@@@@@W@@@@@A@@@@@T@@@@@C@@@@@H@@@@@I@@@@@N@@@@@G@@@@@@@@@#;:.`
+ .:@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@:,@@@@@@@@@@+` ``
+ ,@@@@@@@@@@@';'@@@@@@@@@@:@@@@+@+:;@@@@@@@;:#';::'@@@@@@.  `::;,..`::+:,;@@@@@@:.``
+`'@@@@@@'..```.,,....```  ``                    `                      ..:;@@@@@@@@+.
+@;;;;@;,,`` ``                                                             `:@@@@@@:`
+@@++';:,.```                                                                ``;+@#:,.
+@@@@#+:.`         `,@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'@@@@@+:.                    `.:'::,
+@@@@@@:,`...`,@@@@@@@@@@,    +@@@@@@@@@@@@@@@@@@@@@@@@`  `;'@@@@#               .,,,,
+@@@@@@':::@@@@@@@@.`   `@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@.    ``,@@@`           `.::,
+@@@@@@#@@@@@';.    `@@@@@@@@;,@`@@@@@@@@@@@@@@@@@@@@@@@@@@@@@`   .,@@@@         ``..,
+@@@@@@@@@:..    @@@@@,         ;@@@@@@@@@@@@@@@@@@  ,@@@@@:@@@@@   `,'@@@        ```.
+@@@@@':,,`   @@@@:`            @@@@@@@@@@@@@@@@@@     ,@@: `:@@@@@; ..:@@@`       ```
+@@@@;:`   @@@@@@..             '@@@@@@@@@@@@@@@@@@    `@@`    .@@@@@,`:'@@@.        `
+@@@@;:.`@@@@@,   ``             @@@@@@@@@@@@@@@@@@@@@@@@@      ,@@@@@@.'@@@@,`
+@@@+':''`  ;@@@@@@,,`            @@@@@@@@@@@@@@@@@@@@@@'       `.:@@@#@:@@@@':.
+:;;;:@@,,.`  `@@@+,   `+.         @@@@@@@@@@@@@@@@@@@@`       ```.     @@:';,,,.`
+.,,,,,,;;+;:.`..;,.,      ,,`       @@@@@@@@@@@@@@@@`       ```     ,@@,    ``` `
+`......,,;+++#';@@@@@@.                  '@@@@@@;      ```     .;@@@@.
+ ```` `,;'+@@+;:'@@@'@@@@@:.                `             ,#@@@@+,
+        .:+'@';::'@+':,;,#@@@@@@@@@@@@@@@@@@:      .@@@@@@@:
+         `:,,::,.`...,,`..,,,,...,,,,,...`:;@@@@@@@@;
+           `.....```` `,.`````````..,,,,,.....``````
+*/
+
+class PorousFlowDictator : public GeneralUserObject, public Coupleable
 {
 public:
   PorousFlowDictator(const InputParameters & parameters);

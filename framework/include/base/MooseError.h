@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #ifndef MOOSEERROR_H
 #define MOOSEERROR_H
@@ -104,10 +99,20 @@
 template <typename... Args>
 [[noreturn]] void mooseError(Args &&... args);
 
+class MooseVariable;
+
 namespace moose
 {
 namespace internal
 {
+
+/// Builds and returns a string of the form:
+///
+///     [var1-elemtype],ORDER[var1-order] != [var2-elemtype],ORDER[var2-order]
+///
+/// This is a convenience function to be used when error messages (especially with paramError)
+/// need to report that variable types are incompatible (e.g. with residual save-in).
+std::string incompatVarMsg(MooseVariable & var1, MooseVariable & var2);
 
 std::string
 mooseMsgFmt(const std::string & msg, const std::string & title, const std::string & color);

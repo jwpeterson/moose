@@ -1,16 +1,11 @@
-/****************************************************************/
-/*               DO NOT MODIFY THIS HEADER                      */
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*           (c) 2010 Battelle Energy Alliance, LLC             */
-/*                   ALL RIGHTS RESERVED                        */
-/*                                                              */
-/*          Prepared by Battelle Energy Alliance, LLC           */
-/*            Under Contract No. DE-AC07-05ID14517              */
-/*            With the U. S. Department of Energy               */
-/*                                                              */
-/*            See COPYRIGHT for full restrictions               */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
 
 #include "MultiAppNearestNodeTransfer.h"
 
@@ -565,19 +560,18 @@ MultiAppNearestNodeTransfer::getNearestNode(const Point & p,
   }
   else
   {
-    MeshBase::const_node_iterator nodes_begin =
-        local ? mesh->localNodesBegin() : mesh->getMesh().nodes_begin();
-    MeshBase::const_node_iterator nodes_end =
-        local ? mesh->localNodesEnd() : mesh->getMesh().nodes_end();
+    SimpleRange<MeshBase::const_node_iterator> range(
+        local ? mesh->localNodesBegin() : mesh->getMesh().nodes_begin(),
+        local ? mesh->localNodesEnd() : mesh->getMesh().nodes_end());
 
-    for (MeshBase::const_node_iterator node_it = nodes_begin; node_it != nodes_end; ++node_it)
+    for (auto & node : range)
     {
-      Real current_distance = (p - *(*node_it)).norm();
+      Real current_distance = (p - *node).norm();
 
       if (current_distance < distance)
       {
         distance = current_distance;
-        nearest = *node_it;
+        nearest = node;
       }
     }
   }

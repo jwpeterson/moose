@@ -9,7 +9,7 @@
   zmax = 0
   elem_type = QUAD4
 
-  parallel_type = replicated # required for advanced_op_assignment
+  parallel_type = replicated # Periodic BCs
 []
 
 [GlobalParams]

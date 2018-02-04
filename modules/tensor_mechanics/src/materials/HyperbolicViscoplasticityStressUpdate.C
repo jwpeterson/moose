@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "HyperbolicViscoplasticityStressUpdate.h"
 
 #include "Function.h"
@@ -89,7 +92,7 @@ HyperbolicViscoplasticityStressUpdate::computeResidual(const Real effective_tria
   if (_yield_condition > 0.0)
   {
     const Real xflow = _c_beta * (effective_trial_stress - (_three_shear_modulus * scalar) -
-                                  _hardening_variable[_qp] - _yield_stress);
+                                  computeHardeningValue(scalar) - _yield_stress);
     const Real xphi = _c_alpha * std::sinh(xflow);
 
     _xphidp = -_three_shear_modulus * _c_alpha * _c_beta * std::cosh(xflow);
@@ -114,7 +117,13 @@ void
 HyperbolicViscoplasticityStressUpdate::iterationFinalize(Real scalar)
 {
   if (_yield_condition > 0.0)
-    _hardening_variable[_qp] = _hardening_variable_old[_qp] + (_hardening_constant * scalar);
+    _hardening_variable[_qp] = computeHardeningValue(scalar);
+}
+
+Real
+HyperbolicViscoplasticityStressUpdate::computeHardeningValue(Real scalar)
+{
+  return _hardening_variable_old[_qp] + (_hardening_constant * scalar);
 }
 
 void

@@ -1,9 +1,12 @@
-/****************************************************************/
-/* MOOSE - Multiphysics Object Oriented Simulation Environment  */
-/*                                                              */
-/*          All contents are licensed under LGPL V2.1           */
-/*             See LICENSE for full restrictions                */
-/****************************************************************/
+//* This file is part of the MOOSE framework
+//* https://www.mooseframework.org
+//*
+//* All rights reserved, see COPYRIGHT for full restrictions
+//* https://github.com/idaholab/moose/blob/master/COPYRIGHT
+//*
+//* Licensed under LGPL 2.1, please see LICENSE for details
+//* https://www.gnu.org/licenses/lgpl-2.1.html
+
 #include "LinearViscoelasticityManager.h"
 #include "libmesh/quadrature.h"
 
@@ -12,6 +15,9 @@ InputParameters
 validParams<LinearViscoelasticityManager>()
 {
   InputParameters params = validParams<ElementUserObject>();
+  params.addClassDescription("Manages the updating of the semi-implicit "
+                             "single-step first-order finite difference "
+                             "time-stepping scheme");
   params.addRequiredParam<std::string>("viscoelastic_model",
                                        "name of the LinearViscoelasticityBase object to manage");
   params.addParam<std::string>(
@@ -23,8 +29,8 @@ validParams<LinearViscoelasticityManager>()
       "elastic_strain_name",
       "elastic_strain",
       "name of the elastic strain tensor used for the viscoelastic update");
-  params.set<MultiMooseEnum>("execute_on") = "timestep_begin timestep_end";
-  params.suppressParameter<MultiMooseEnum>("execute_on");
+  params.set<ExecFlagEnum>("execute_on") = {EXEC_TIMESTEP_BEGIN, EXEC_TIMESTEP_END};
+  params.suppressParameter<ExecFlagEnum>("execute_on");
   return params;
 }
 
