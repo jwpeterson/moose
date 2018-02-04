@@ -125,7 +125,7 @@ rho=1
   [./SMP]
     type = SMP
     full = true
-    solve_type = 'PJFNK'
+    solve_type = 'NEWTON'
   [../]
 []
 
