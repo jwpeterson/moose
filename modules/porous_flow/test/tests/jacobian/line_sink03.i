@@ -386,8 +386,10 @@
     type = SMP
     full = true
     #petsc_options = '-snes_test_display'
-    petsc_options_iname = '-ksp_type -pc_type -snes_atol -snes_rtol -snes_max_it -snes_type'
-    petsc_options_value = 'bcgs bjacobi 1E-15 1E-10 10000 test'
+
+    # Original PETSc flags also pass "-snes_type test -snes_max_it 10000".
+    petsc_options_iname = '-ksp_type -pc_type -snes_atol -snes_rtol'
+    petsc_options_value = 'bcgs bjacobi 1E-15 1E-10'
   [../]
 []
 
@@ -395,7 +397,11 @@
   type = Transient
   solve_type = Newton
   dt = 1
-  end_time = 1
+  # end_time = 1
+  nl_max_its = 10
+  l_max_its = 10
+  dtmin = .5 # 1.e-3
+  num_steps = 10
 []
 
 [Outputs]
