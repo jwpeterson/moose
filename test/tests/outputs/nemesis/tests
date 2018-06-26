@@ -6,4 +6,19 @@
     check_files = 'nemesis_out.e.1.0'
     max_parallel = 1
   [../]
+  [./nemesis_elemental]
+    type = 'Exodiff'
+    input = nemesis_elemental.i
+    exodiff = 'nemesis_elemental_out.e.4.0 nemesis_elemental_out.e.4.1 nemesis_elemental_out.e.4.2 nemesis_elemental_out.e.4.3'
+    min_parallel = 4
+    max_parallel = 4
+    # The code is platform- and compiler-independent, but our partitioners
+    # still aren't... until then we have to restrict the test to be on the
+    # safe side.
+    platform = 'DARWIN'
+    compiler = 'CLANG'
+    requirement = "The Nemesis Ouput object shall support writing elemental variables."
+    design = 'Outputs/index.md'
+    issues = '#2122'
+  [../]
 []
