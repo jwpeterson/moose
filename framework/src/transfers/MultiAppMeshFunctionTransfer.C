@@ -29,6 +29,8 @@ InputParameters
 validParams<MultiAppMeshFunctionTransfer>()
 {
   InputParameters params = validParams<MultiAppTransfer>();
+  params.addClassDescription("Samples one or more variable fields in the master domain using a "
+                             "MeshFunction and communicates those values to another MultiApp.");
   params.addRequiredParam<std::vector<AuxVariableName>>(
       "variable", "The auxiliary variable to store the transferred values in.");
   params.addRequiredParam<std::vector<VariableName>>("source_variable",

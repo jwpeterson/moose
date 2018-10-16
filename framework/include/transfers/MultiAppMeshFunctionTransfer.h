@@ -21,7 +21,7 @@ InputParameters validParams<MultiAppMeshFunctionTransfer>();
 /**
  * Transfers a vector of variables. For each individual one,
  * samples the variable's value in the Master domain at the point where
- * the MultiApp is. Copies that value into a postprocessor in the MultiApp.
+ * the MultiApp is. Copies that value into a nodal or elemental variable in the MultiApp.
  * The source and destination vectors (of variables) should be ordered consistently.
  */
 class MultiAppMeshFunctionTransfer : public MultiAppTransfer
@@ -40,6 +40,9 @@ protected:
   std::vector<VariableName> _from_var_name;
   /// The number of variables to transfer
   unsigned int _var_size;
+  /// If none of the off-processor (nodal) values match a nodal value
+  /// we require, this flag controls whether we keep going (when flag
+  /// is false) or throw an error (when flag is true).
   bool _error_on_miss;
 
 private:
