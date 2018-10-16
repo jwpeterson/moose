@@ -24,6 +24,10 @@ InputParameters
 validParams<MultiAppTransfer>()
 {
   InputParameters params = validParams<Transfer>();
+  params.addClassDescription(
+      "Base class for all MultiAppTransfer objects, which are Transfers that push/pull values "
+      "to/from MultiApps. Derived classes must override the execute() interface.");
+
   params.addRequiredParam<MultiAppName>("multi_app", "The name of the MultiApp to use.");
 
   params.addRequiredParam<MooseEnum>("direction",
