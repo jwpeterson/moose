@@ -601,6 +601,8 @@ MultiAppNearestNodeTransfer::bboxMinDistance(Point p, BoundingBox bbox)
     if (distance < min_distance)
       min_distance = distance;
   }
+  std::cout << "Returning min_distance=" << min_distance << std::endl;
+
   return min_distance;
 }
 
