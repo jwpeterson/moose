@@ -4,8 +4,8 @@
 [Mesh]
   type = GeneratedMesh
   dim = 2
-  nx = 100
-  ny = 100
+  nx = 4
+  ny = 4
   parallel_type = replicated
 []
 
@@ -19,13 +19,23 @@
 [AuxVariables]
   [./from_sub]
   [../]
+  [./pid]
+    order = constant
+    family = monomial
+  [../]
 []
-
 
 [Kernels]
   [./diff]
     type = Diffusion
     variable = u
+  [../]
+[]
+
+[AuxKernels]
+  [./pid]
+    type = ProcessorIDAux
+    variable = pid
   [../]
 []
 
