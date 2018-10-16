@@ -20,7 +20,7 @@ template <>
 InputParameters validParams<MultiAppNearestNodeTransfer>();
 
 /**
- * Copy the value to the target domain from the nearest node in the source domain.
+ * Copy a field variable to the target domain from the nearest node in the source domain.
  */
 class MultiAppNearestNodeTransfer : public MultiAppTransfer
 {
