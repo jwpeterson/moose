@@ -165,6 +165,8 @@ MultiAppNearestNodeTransfer::execute()
               Real distance = bboxMinDistance(*node, bboxes[i_from]);
               if (distance < nearest_max_distance || bboxes[i_from].contains_point(*node))
               {
+                // std::cout << "Setting node_index_map info for node " << node->id() << std::endl;
+
                 std::pair<unsigned int, unsigned int> key(i_to, node->id());
                 node_index_map[i_proc][key] = outgoing_qps[i_proc].size();
                 outgoing_qps[i_proc].push_back(*node + _to_positions[i_to]);
@@ -214,6 +216,20 @@ MultiAppNearestNodeTransfer::execute()
         }
       }
     }
+    // We should be done building the node_index_map and outgoing_qps data structures.
+    // node_index_map = vector<map<pair<unsigned int, unsigned int>, unsigned int>>
+    unsigned int pid=0;
+    for (const auto & m : node_index_map)
+    {
+      std::cout << "Map entries for processor " << pid++ << std::endl;
+      for (const auto & pr : m)
+      {
+        const auto & key = pr.first;
+        std::cout << "Key: (send to proc = " << key.first << ", node id = " << key.second << ")" << std::endl;
+        std::cout << "Index of point: " << pr.second << std::endl;
+      }
+    }
+
   }
 
   ////////////////////
@@ -563,6 +579,8 @@ MultiAppNearestNodeTransfer::bboxMaxDistance(Point p, BoundingBox bbox)
 {
   std::vector<Point> source_points = {bbox.first, bbox.second};
 
+  // std::cout << "Computing max distance between Point " << p << " and BoundingBox (" << bbox.first << ", " << bbox.second << ")" << std::endl;
+
   std::vector<Point> all_points(8);
   for (unsigned int x = 0; x < 2; x++)
     for (unsigned int y = 0; y < 2; y++)
@@ -578,6 +596,9 @@ MultiAppNearestNodeTransfer::bboxMaxDistance(Point p, BoundingBox bbox)
     if (distance > max_distance)
       max_distance = distance;
   }
+
+  // std::cout << "Returning max_distance=" << max_distance << std::endl;
+
   return max_distance;
 }
 
@@ -585,6 +606,8 @@ Real
 MultiAppNearestNodeTransfer::bboxMinDistance(Point p, BoundingBox bbox)
 {
   std::vector<Point> source_points = {bbox.first, bbox.second};
+
+  // std::cout << "Computing min distance between Point " << p << " and BoundingBox (" << bbox.first << ", " << bbox.second << ")" << std::endl;
 
   std::vector<Point> all_points(8);
   for (unsigned int x = 0; x < 2; x++)
@@ -601,7 +624,7 @@ MultiAppNearestNodeTransfer::bboxMinDistance(Point p, BoundingBox bbox)
     if (distance < min_distance)
       min_distance = distance;
   }
-  std::cout << "Returning min_distance=" << min_distance << std::endl;
+  // std::cout << "Returning min_distance=" << min_distance << std::endl;
 
   return min_distance;
 }
