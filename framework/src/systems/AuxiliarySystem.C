@@ -262,6 +262,8 @@ AuxiliarySystem::serializeSolution()
 void
 AuxiliarySystem::compute(ExecFlagType type)
 {
+  std::cout << "Called AuxiliarySystem::compute(" << type << ")" << std::endl;
+
   // avoid division by dt which might be zero.
   if (_fe_problem.dt() > 0. && _time_integrator)
     _time_integrator->preStep();

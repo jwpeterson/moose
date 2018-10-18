@@ -36,6 +36,7 @@ protected:
   Real _coef;
   unsigned int _order;
   std::vector<Real> _integration_coef;
+  FEProblemBase & _fe_problem;
 };
 
 #endif // VARIABLETIMEINTEGRATIONAUX_H

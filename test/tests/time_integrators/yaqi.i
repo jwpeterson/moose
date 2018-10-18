@@ -54,9 +54,14 @@
   type = Transient
   start_time = 0.0
   end_time   = 1.0
-  dt = 0.1
+  dt = 0.5
   nl_abs_tol = 1e-12
   nl_rel_tol = 1e-12
+  [./TimeIntegrator]
+    # type = ImplicitEuler
+    # type = CrankNicolson
+    type = LStableDirk2
+  [../]
 []
 
 [Outputs]

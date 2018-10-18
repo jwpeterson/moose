@@ -26,7 +26,8 @@ validParams<VariableTimeIntegrationAux>()
 VariableTimeIntegrationAux::VariableTimeIntegrationAux(const InputParameters & parameters)
   : AuxKernel(parameters),
     _coef(getParam<Real>("coefficient")),
-    _order(getParam<unsigned int>("order"))
+    _order(getParam<unsigned int>("order")),
+    _fe_problem(*parameters.get<FEProblemBase *>("_fe_problem_base"))
 {
   switch (_order)
   {
@@ -68,6 +69,10 @@ Real
 VariableTimeIntegrationAux::getIntegralValue()
 {
   Real integral_value = 0.0;
+  // Values provided through the TransientInterface.
+  std::cout << "In VariableTimeIntegrationAux::getIntegralValue(), using _dt= " << _dt << std::endl;
+  std::cout << "In VariableTimeIntegrationAux::getIntegralValue(), using _t= " << _t << std::endl;
+  std::cout << "_fe_problem.timeOld()=" << _fe_problem.timeOld() << std::endl;
 
   for (unsigned int i = 0; i < _order; ++i)
     integral_value += _integration_coef[i] * (*_coupled_vars[i])[_qp] * _dt;

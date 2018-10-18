@@ -56,6 +56,9 @@ LStableDirk2::solve()
   // Time at stage 1
   Real time_stage1 = time_old + _alpha * _dt;
 
+  // TODO: Should we modify FEProblem's conception of what dt is, or is that too confusing?
+  // Real dt_orig = _dt;
+
   // Reset iteration counts
   _n_nonlinear_iterations = 0;
   _n_linear_iterations = 0;
@@ -65,7 +68,10 @@ LStableDirk2::solve()
   _console << "1st stage\n";
   _stage = 1;
   _fe_problem.time() = time_stage1;
+  // _fe_problem.dt() = time_stage1 - time_old;
+  //std::cout << "Starting LStableDirk2 first stage solve." << std::endl;
   _fe_problem.getNonlinearSystemBase().system().solve();
+  //std::cout << "Finished LStableDirk2 first stage solve." << std::endl;
   _n_nonlinear_iterations += getNumNonlinearIterationsLastSolve();
   _n_linear_iterations += getNumLinearIterationsLastSolve();
 
@@ -79,12 +85,17 @@ LStableDirk2::solve()
   _stage = 2;
   _fe_problem.timeOld() = time_stage1;
   _fe_problem.time() = time_new;
+  // _fe_problem.dtOld() = _fe_problem.dt();
+  // _fe_problem.dt() = time_new - time_stage1;
+  //std::cout << "Starting LStableDirk2 second stage solve." << std::endl;
   _fe_problem.getNonlinearSystemBase().system().solve();
+  //std::cout << "Finished LStableDirk2 second stage solve." << std::endl;
   _n_nonlinear_iterations += getNumNonlinearIterationsLastSolve();
   _n_linear_iterations += getNumLinearIterationsLastSolve();
 
   // Reset time at beginning of step to its original value
   _fe_problem.timeOld() = time_old;
+  // _fe_problem.dt() = dt_orig;
 }
 
 void
