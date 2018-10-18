@@ -69,13 +69,19 @@ Real
 VariableTimeIntegrationAux::getIntegralValue()
 {
   Real integral_value = 0.0;
+  // For multistage TimeIntegrators, we need to accumulate only the contribution due to
+  // the current stage, whose size is not given by _dt, but rather by "_t - _fe_problem.timeOld()".
+  // The multistage TimeIntegrators are responsible for setting these correctly.
+  const Real stage_dt = _t - _fe_problem.timeOld();
+
   // Values provided through the TransientInterface.
   std::cout << "In VariableTimeIntegrationAux::getIntegralValue(), using _dt= " << _dt << std::endl;
   std::cout << "In VariableTimeIntegrationAux::getIntegralValue(), using _t= " << _t << std::endl;
   std::cout << "_fe_problem.timeOld()=" << _fe_problem.timeOld() << std::endl;
+  std::cout << "stage_dt = " << stage_dt << std::endl;
 
   for (unsigned int i = 0; i < _order; ++i)
-    integral_value += _integration_coef[i] * (*_coupled_vars[i])[_qp] * _dt;
+    integral_value += _integration_coef[i] * (*_coupled_vars[i])[_qp] * stage_dt;
 
   /**
    * Subsequent timesteps may be unequal, so the standard Simpson rule
@@ -86,6 +92,11 @@ VariableTimeIntegrationAux::getIntegralValue()
    */
   if (_order == 3 && _dt != _dt_old)
   {
+    // Third-order integration not supported for multistage TimeIntegrators.
+    // This may be the case if FEProblem's _dt does not match "_t - _fe_problem.timeOld()"
+    if (std::abs(stage_dt - _dt) > TOLERANCE)
+      mooseError("VariableTimeIntegrationAux does not support mulitstage TimeIntegrators.");
+
     Real x0 = 0.0;
     Real x1 = _dt_old;
     Real x2 = _dt + _dt_old;
