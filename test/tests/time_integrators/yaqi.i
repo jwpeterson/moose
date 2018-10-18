@@ -23,11 +23,6 @@
 []
 
 [Functions]
-  [./forcing_fn]
-    type = ParsedFunction
-    value = 't'
-  [../]
-
   [./exact_fn]
     type = ParsedFunction
     value = '0.5*t*t'
@@ -79,12 +74,12 @@
   type = Transient
   start_time = 0.0
   end_time   = 1.0
-  # dt = 1.0
+  dt = 1.0
   # dt = 0.5
   # dt = 0.25
   # dt = 0.125
   # dt = 0.0625
-  dt = 0.03125
+  # dt = 0.03125
   nl_abs_tol = 1e-12
   nl_rel_tol = 1e-12
   [./TimeIntegrator]
