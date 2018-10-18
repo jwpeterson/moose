@@ -62,6 +62,8 @@ VariableTimeIntegrationAux::computeValue()
   if (_order == 3)
     return _u_older[_qp] + _coef * integral;
 
+  std::cout << "In VariableTimeIntegrationAux::computeValue(), returning: " << _u_old[_qp] + _coef * integral << std::endl;
+
   return _u_old[_qp] + _coef * integral;
 }
 
@@ -69,9 +71,14 @@ Real
 VariableTimeIntegrationAux::getIntegralValue()
 {
   Real integral_value = 0.0;
+
   // For multistage TimeIntegrators, we need to accumulate only the contribution due to
   // the current stage, whose size is not given by _dt, but rather by "_t - _fe_problem.timeOld()".
   // The multistage TimeIntegrators are responsible for setting these correctly.
+  //
+  // The computation "_t - _fe_problem.timeOld()" unfortunately
+  // returns 0 for _explicit_ multistage TimeIntegrators, because
+  // those Kernels are evaluated at the old time!
   const Real stage_dt = _t - _fe_problem.timeOld();
 
   // Values provided through the TransientInterface.
@@ -81,7 +88,11 @@ VariableTimeIntegrationAux::getIntegralValue()
   std::cout << "stage_dt = " << stage_dt << std::endl;
 
   for (unsigned int i = 0; i < _order; ++i)
-    integral_value += _integration_coef[i] * (*_coupled_vars[i])[_qp] * stage_dt;
+  {
+    // std::cout << "Accumulating value " << (*_coupled_vars[i])[_qp] << std::endl;
+    // std::cout << "_integration_coef[i]= " << _integration_coef[i] << std::endl;
+    integral_value += _integration_coef[i] * (*_coupled_vars[i])[_qp] * _dt;
+  }
 
   /**
    * Subsequent timesteps may be unequal, so the standard Simpson rule
@@ -109,5 +120,7 @@ VariableTimeIntegrationAux::getIntegralValue()
     integral_value = term1 + term2 * term3;
   }
 
+  // I verified that this is equal to stage_dt now...
+  // std::cout << "integral_value = " << integral_value << std::endl;
   return integral_value;
 }

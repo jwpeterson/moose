@@ -39,6 +39,8 @@
     type = CoupledForce
     variable = u
     v = v
+    # Important! If you use a explicit TimeIntegrator, you must set implicit = false in all Kernels!
+    implicit = false
   [../]
 []
 
@@ -74,8 +76,8 @@
   type = Transient
   start_time = 0.0
   end_time   = 1.0
-  dt = 1.0
-  # dt = 0.5
+  # dt = 1.0
+  dt = 0.5
   # dt = 0.25
   # dt = 0.125
   # dt = 0.0625
@@ -85,10 +87,15 @@
   [./TimeIntegrator]
     # type = ImplicitEuler
     # type = CrankNicolson
-    type = LStableDirk2
+    # type = LStableDirk2
+    # Different explicit 2nd-order RK methods
+    # type = ExplicitMidpoint
+    # type = Ralston
+    type = Heun
   [../]
 []
 
 [Outputs]
   csv = true
+  exodus = true
 []
