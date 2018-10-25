@@ -84,8 +84,18 @@ MultiAppNearestNodeTransfer::execute()
   // Get the bounding boxes for the "from" domains.
   std::vector<BoundingBox> bboxes = getFromBoundingBoxes();
 
+  // Debugging:
+  for (const auto & bbox : bboxes)
+    std::cout << "bbox = (" << bbox.first << ", " << bbox.second << ")" << std::endl;
+
   // Figure out how many "from" domains each processor owns.
   std::vector<unsigned int> froms_per_proc = getFromsPerProc();
+
+  // Debugging:
+  std::cout << "froms_per_proc = ";
+  for (const auto & val : froms_per_proc)
+    std::cout << val << " ";
+  std::cout << std::endl;
 
   ////////////////////
   // For every point in the local "to" domain, figure out which "from" domains
@@ -139,6 +149,11 @@ MultiAppNearestNodeTransfer::execute()
             target_local_nodes[i++] = node;
         }
 
+        std::cout << "Finished building list of target_local_nodes: ";
+        for (const auto & node : target_local_nodes)
+          std::cout << node->id() << " ";
+        std::cout << std::endl;
+
         for (const auto & node : target_local_nodes)
         {
           // Skip this node if the variable has no dofs at it.
@@ -154,6 +169,8 @@ MultiAppNearestNodeTransfer::execute()
               nearest_max_distance = distance;
           }
 
+          std::cout << "The nearest_max_distance (over all bboxes) for Node " << static_cast<Point&>(*node) << " = " << nearest_max_distance << std::endl;
+
           unsigned int from0 = 0;
           for (processor_id_type i_proc = 0; i_proc < n_processors();
                from0 += froms_per_proc[i_proc], i_proc++)
@@ -165,9 +182,23 @@ MultiAppNearestNodeTransfer::execute()
               Real distance = bboxMinDistance(*node, bboxes[i_from]);
               if (distance < nearest_max_distance || bboxes[i_from].contains_point(*node))
               {
-                // std::cout << "Setting node_index_map info for node " << node->id() << std::endl;
+                // Debugging
+                std::cout << "Setting node_index_map info for node " << node->id() << std::endl;
+
+                // Which condition above actually got us here?
+                if (distance < nearest_max_distance)
+                  std::cout << "distance = " << distance << " less than " << nearest_max_distance << std::endl;
+
+                if (bboxes[i_from].contains_point(*node))
+                  std::cout << "bboxes[" << i_from << "] contains point " << static_cast<Point&>(*node) << std::endl;
+                else
+                  std::cout << "bboxes[" << i_from << "] did not contain point " << static_cast<Point&>(*node) << std::endl;
 
                 std::pair<unsigned int, unsigned int> key(i_to, node->id());
+                std::cout << "i_proc = " << i_proc << std::endl;
+                std::cout << "key = (i_to, node->id()) = " << i_to << ", " << node->id() << std::endl;
+                std::cout << "outgoing_qps[i_proc].size() = " << outgoing_qps[i_proc].size() << std::endl;
+
                 node_index_map[i_proc][key] = outgoing_qps[i_proc].size();
                 outgoing_qps[i_proc].push_back(*node + _to_positions[i_to]);
                 qp_found = true;
@@ -590,6 +621,10 @@ MultiAppNearestNodeTransfer::bboxMaxDistance(Point p, BoundingBox bbox)
 
   Real max_distance = 0.;
 
+  // Compute the signed distance from p to bbox.
+  // Real signed_distance = bbox.signed_distance(p);
+  // std::cout << "The signed distance between Point " << p << " and BoundingBox (" << bbox.first << ", " << bbox.second << ") = " << signed_distance << std::endl;
+
   for (unsigned int i = 0; i < 8; i++)
   {
     Real distance = (p - all_points[i]).norm();
@@ -618,12 +653,17 @@ MultiAppNearestNodeTransfer::bboxMinDistance(Point p, BoundingBox bbox)
 
   Real min_distance = std::numeric_limits<Real>::max();
 
+  // Compute the signed distance from p to bbox.
+  // Real signed_distance = bbox.signed_distance(p);
+  // std::cout << "The signed distance between Point " << p << " and BoundingBox (" << bbox.first << ", " << bbox.second << ") = " << signed_distance << std::endl;
+
   for (unsigned int i = 0; i < 8; i++)
   {
     Real distance = (p - all_points[i]).norm();
     if (distance < min_distance)
       min_distance = distance;
   }
+
   // std::cout << "Returning min_distance=" << min_distance << std::endl;
 
   return min_distance;
