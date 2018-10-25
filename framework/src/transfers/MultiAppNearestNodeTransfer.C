@@ -397,6 +397,12 @@ MultiAppNearestNodeTransfer::execute()
       else
         _communicator.send(i_proc, outgoing_evals, send_evals[i_proc]);
     }
+
+    // Every proc should now have filled in the "processor_outgoing_evals" data structure (?)
+    std::cout << "processor_outgoing_evals = " << std::endl;
+    for (unsigned int pid=0; pid<processor_outgoing_evals.size(); ++pid) // const auto & vec : processor_outgoing_evals)
+      for (unsigned int i=0; i<processor_outgoing_evals[pid].size(); ++i) // const auto & val : vec)
+        std::cout << "[" << pid << "][" << i << "] = " << processor_outgoing_evals[pid][i] << std::endl;
   }
 
   else // We've cached the nearest nodes.
