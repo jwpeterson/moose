@@ -266,17 +266,18 @@ MultiAppNearestNodeTransfer::execute()
     // We should be done building the node_index_map and outgoing_qps data structures.
     // node_index_map = vector<map<pair<unsigned int, unsigned int>, unsigned int>>
     unsigned int pid=0;
+    std::cout << "Printing entries of node_index_map:" << std::endl;
     for (const auto & m : node_index_map)
     {
       std::cout << "Map entries for processor " << pid++ << std::endl;
       for (const auto & pr : m)
       {
         const auto & key = pr.first;
-        std::cout << "Key: (send to proc = " << key.first << ", node id = " << key.second << ")" << std::endl;
-        std::cout << "Index of point: " << pr.second << std::endl;
+        // std::cout << "Key: (send to proc = " << key.first << ", node id = " << key.second << ")" << std::endl;
+        // std::cout << "Index of point: " << pr.second << std::endl;
+        std::cout << "[" << pid << "][(" << key.first << ", " << key.second << ")] = " << pr.second << std::endl;
       }
     }
-
   }
 
   ////////////////////
