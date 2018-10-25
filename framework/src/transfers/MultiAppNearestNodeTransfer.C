@@ -156,6 +156,9 @@ MultiAppNearestNodeTransfer::execute()
 
         for (const auto & node : target_local_nodes)
         {
+          // Newline at the start of each node iteration
+          std::cout << std::endl;
+
           // Skip this node if the variable has no dofs at it.
           if (node->n_dofs(sys_num, var_num) < 1)
             continue;
@@ -169,7 +172,8 @@ MultiAppNearestNodeTransfer::execute()
               nearest_max_distance = distance;
           }
 
-          std::cout << "The nearest_max_distance (over all bboxes) for Node " << static_cast<Point&>(*node) << " = " << nearest_max_distance << std::endl;
+          std::cout << "The nearest_max_distance (over all bboxes) for Node " << node->id()
+                    << ", " << static_cast<Point&>(*node) << " = " << nearest_max_distance << std::endl;
 
           unsigned int from0 = 0;
           for (processor_id_type i_proc = 0; i_proc < n_processors();
@@ -179,7 +183,10 @@ MultiAppNearestNodeTransfer::execute()
             for (unsigned int i_from = from0; i_from < from0 + froms_per_proc[i_proc] && !qp_found;
                  i_from++)
             {
+
               Real distance = bboxMinDistance(*node, bboxes[i_from]);
+              std::cout << "Testing bboxMinDistance = " << distance << " to bbox i_from = " << i_from << std::endl;
+
               if (distance < nearest_max_distance || bboxes[i_from].contains_point(*node))
               {
                 // Debugging
@@ -203,6 +210,15 @@ MultiAppNearestNodeTransfer::execute()
                 outgoing_qps[i_proc].push_back(*node + _to_positions[i_to]);
                 qp_found = true;
               }
+
+              // Debugging: if (!qp_found), this means something went
+              // wrong. It can happen if
+              // bboxMinDistance == nearest_max_distance
+              // and the point is not contained in the bbox. This should not happen in principle, since
+              // for a given BBox A, bboxMinDistance(p,A) <= bboxMaxDistance(p,A). So perhaps changing
+              // the check to <= would be sufficient...
+              if (!qp_found)
+                std::cout << "Node " << node->id() << ", " << static_cast<Point&>(*node) << " not found closest to _any_ BBox." << std::endl;
             }
           }
         }
