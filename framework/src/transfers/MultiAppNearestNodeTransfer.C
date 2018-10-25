@@ -218,7 +218,17 @@ MultiAppNearestNodeTransfer::execute()
               // for a given BBox A, bboxMinDistance(p,A) <= bboxMaxDistance(p,A). So perhaps changing
               // the check to <= would be sufficient...
               if (!qp_found)
-                std::cout << "Node " << node->id() << ", " << static_cast<Point&>(*node) << " not found closest to _any_ BBox." << std::endl;
+                {
+                  std::cout << "Node " << node->id() << ", " << static_cast<Point&>(*node) << " not found closest to _any_ BBox." << std::endl;
+                  // Based on the logic above, we should have found at
+                  // least one bounding box for every
+                  // target_local_node, since at least one min
+                  // distance will be less than or equal to the
+                  // nearest_max_distance, at the very least this must
+                  // happen for the bbox which sets the
+                  // nearest_max_distance.
+                  mooseError("BoundingBox found for node ", node->id(), " not found.");
+                }
             }
           }
         }
