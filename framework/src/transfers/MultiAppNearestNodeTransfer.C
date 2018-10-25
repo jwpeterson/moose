@@ -529,9 +529,15 @@ MultiAppNearestNodeTransfer::execute()
         if (node->n_dofs(sys_num, var_num) < 1)
           continue;
 
+        // If nothing is in the node_index_map for a given local node,
+        // it will get the value 0.
         Real best_val = 0;
         if (!_neighbors_cached)
         {
+          // Search through all the incoming evaluation points from
+          // different processors for the one with the closest
+          // point. If there are multiple values from other processors
+          // which are equidistant, the first one we check will "win".
           Real min_dist = std::numeric_limits<Real>::max();
           for (unsigned int i_from = 0; i_from < incoming_evals.size(); i_from++)
           {
@@ -541,8 +547,15 @@ MultiAppNearestNodeTransfer::execute()
             unsigned int qp_ind = node_index_map[i_from][key];
             if (incoming_evals[i_from][2 * qp_ind] >= min_dist)
               continue;
+
+            // If we made it here, we are going set a new value and
+            // distance because we found one that was closer.
+            std::cout << "Old min_dist = " << min_dist << std::endl;
+            std::cout << "Old best value = " << best_val << std::endl;
             min_dist = incoming_evals[i_from][2 * qp_ind];
             best_val = incoming_evals[i_from][2 * qp_ind + 1];
+            std::cout << "New min_dist = " << min_dist << std::endl;
+            std::cout << "New best value = " << best_val << std::endl;
 
             if (_fixed_meshes)
             {
