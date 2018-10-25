@@ -187,14 +187,14 @@ MultiAppNearestNodeTransfer::execute()
               Real distance = bboxMinDistance(*node, bboxes[i_from]);
               std::cout << "Testing bboxMinDistance = " << distance << " to bbox i_from = " << i_from << std::endl;
 
-              if (distance < nearest_max_distance || bboxes[i_from].contains_point(*node))
+              if (distance <= nearest_max_distance || bboxes[i_from].contains_point(*node))
               {
                 // Debugging
                 std::cout << "Setting node_index_map info for node " << node->id() << std::endl;
 
                 // Which condition above actually got us here?
-                if (distance < nearest_max_distance)
-                  std::cout << "distance = " << distance << " less than " << nearest_max_distance << std::endl;
+                if (distance <= nearest_max_distance)
+                  std::cout << "distance = " << distance << " less than or equal to " << nearest_max_distance << std::endl;
 
                 if (bboxes[i_from].contains_point(*node))
                   std::cout << "bboxes[" << i_from << "] contains point " << static_cast<Point&>(*node) << std::endl;
