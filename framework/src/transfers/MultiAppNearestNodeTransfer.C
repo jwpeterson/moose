@@ -334,11 +334,17 @@ MultiAppNearestNodeTransfer::execute()
 
     for (processor_id_type i_proc = 0; i_proc < n_processors(); i_proc++)
     {
+      // We either already use our own outgoing_qps or receive them
+      // from another processor.
       std::vector<Point> incoming_qps;
       if (i_proc == processor_id())
         incoming_qps = outgoing_qps[i_proc];
       else
         _communicator.receive(i_proc, incoming_qps);
+
+      std::cout << "incoming_qps, proc_id = " << i_proc << ": " << std::endl;
+      for (const auto & pt : incoming_qps)
+        std::cout << pt << std::endl;
 
       if (_fixed_meshes)
       {
