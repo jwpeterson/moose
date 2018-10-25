@@ -353,6 +353,10 @@ MultiAppNearestNodeTransfer::execute()
       }
 
       std::vector<Real> & outgoing_evals = processor_outgoing_evals[i_proc];
+      // Resize this vector to two times the size of the incoming_qps
+      // vector because we are going to store both the value from the nearest
+      // local node *and* the distance between the incoming_qp and that node
+      // for later comparison purposes.
       outgoing_evals.resize(2 * incoming_qps.size());
 
       for (unsigned int qp = 0; qp < incoming_qps.size(); qp++)
@@ -373,8 +377,23 @@ MultiAppNearestNodeTransfer::execute()
 
           for (unsigned int i_node = 0; i_node < local_nodes[i_local_from].size(); i_node++)
           {
+            // Compute distance between the current incoming_qp to local node i_node.
             Real current_distance =
                 (qpt - *(local_nodes[i_local_from][i_node]) - _from_positions[i_local_from]).norm();
+
+            // Debugging:
+            std::cout << "Distance between incoming qpt = " << qpt
+                      << " and local node "
+                      << static_cast<Point>(*local_nodes[i_local_from][i_node] + _from_positions[i_local_from])
+                      << " = " << current_distance << std::endl;
+
+            // If an incoming_qp is equally close to two or more local nodes, then
+            // the first one we test will "win", even though any of the others could
+            // also potentially be chosen instead... there's no way to decide among
+            // the set of all equidistant points.
+            std::cout << "Comparing current_distance = " << current_distance << ", and original distance = " << outgoing_evals[2 * qp] << std::endl;
+
+            // outgoing_evals[2 * qp] is the current closest distance between a local point and the incoming_qp.
             if (current_distance < outgoing_evals[2 * qp])
             {
               // Assuming LAGRANGE!
@@ -383,6 +402,12 @@ MultiAppNearestNodeTransfer::execute()
                 dof_id_type from_dof =
                     local_nodes[i_local_from][i_node]->dof_number(from_sys_num, from_var_num, 0);
 
+                // The indexing of the outgoing_evals vector looks
+                // like [(distance, value), (distance, value), ...]
+                // for each incoming_qp. We only keep the value from
+                // the node with the smallest distance to the
+                // incoming_qp, and then we compare across all
+                // processors later and pick the closest one.
                 outgoing_evals[2 * qp] = current_distance;
                 outgoing_evals[2 * qp + 1] = (*from_sys.solution)(from_dof);
 
