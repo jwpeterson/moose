@@ -196,14 +196,15 @@ MultiAppNearestNodeTransfer::execute()
                 outgoing_qps[i_proc].push_back(*node + _to_positions[i_to]);
                 qp_found = true;
               }
-
-              // if (!qp_found), this means something went wrong. This
-              // should not happen in principle, since for a given
-              // BBox A, bboxMinDistance(p,A) <= bboxMaxDistance(p,A)
-              // should be guaranteed
-              if (!qp_found)
-                mooseError("BoundingBox found for node ", node->id(), " at position ", static_cast<Point &>(*node), " not found.");
             }
+
+            // if (!qp_found), this means something went wrong, since
+            // for a given BBox A, bboxMinDistance(p,A) <=
+            // bboxMaxDistance(p,A) should be guaranteed, i.e. the
+            // Bbox we are using for the max distance should always
+            // have a min which is less.
+            if (!qp_found)
+              mooseError("BoundingBox found for node ", node->id(), " at position ", static_cast<Point &>(*node), " not found.");
           }
         }
       }
