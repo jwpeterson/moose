@@ -19,10 +19,6 @@
 [AuxVariables]
   [./from_sub]
   [../]
-#  [./pid]
-#    order = constant
-#    family = monomial
-#  [../]
 []
 
 [Kernels]
@@ -31,13 +27,6 @@
     variable = u
   [../]
 []
-
-# [AuxKernels]
-#   [./pid]
-#     type = ProcessorIDAux
-#     variable = pid
-#   [../]
-# []
 
 [BCs]
   [./left]
