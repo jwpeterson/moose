@@ -58,7 +58,7 @@
 
 [MultiApps]
   [./sub]
-    # Note, in case you want to modify this tes.  It is important that there are
+    # Note, in case you want to modify this test.  It is important that there are
     # an odd number of apps because this way we will catch errors caused by load
     # imbalances with our -p 2 tests.
     type = TransientMultiApp
