@@ -178,7 +178,7 @@ MultiAppNearestNodeTransfer::execute()
               // BBox A, bboxMinDistance(p,A) <= bboxMaxDistance(p,A)
               // should be guaranteed
               if (!qp_found)
-                mooseError("BoundingBox found for node ", node->id(), " not found.");
+                mooseError("BoundingBox found for node ", node->id(), " at position ", static_cast<Point &>(*node), " not found.");
             }
           }
         }
