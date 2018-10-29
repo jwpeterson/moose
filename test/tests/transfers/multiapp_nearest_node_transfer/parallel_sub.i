@@ -1,7 +1,7 @@
 [Mesh]
   type = GeneratedMesh
   dim = 1
-  nx = 2
+  nx = 180
   parallel_type = replicated
 []
 

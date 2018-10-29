@@ -4,8 +4,8 @@
 [Mesh]
   type = GeneratedMesh
   dim = 2
-  nx = 4
-  ny = 4
+  nx = 100
+  ny = 100
   parallel_type = replicated
 []
 
@@ -19,10 +19,10 @@
 [AuxVariables]
   [./from_sub]
   [../]
-  [./pid]
-    order = constant
-    family = monomial
-  [../]
+#  [./pid]
+#    order = constant
+#    family = monomial
+#  [../]
 []
 
 [Kernels]
@@ -32,12 +32,12 @@
   [../]
 []
 
-[AuxKernels]
-  [./pid]
-    type = ProcessorIDAux
-    variable = pid
-  [../]
-[]
+# [AuxKernels]
+#   [./pid]
+#     type = ProcessorIDAux
+#     variable = pid
+#   [../]
+# []
 
 [BCs]
   [./left]
