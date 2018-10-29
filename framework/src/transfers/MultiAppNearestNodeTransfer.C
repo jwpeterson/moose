@@ -84,8 +84,18 @@ MultiAppNearestNodeTransfer::execute()
   // Get the bounding boxes for the "from" domains.
   std::vector<BoundingBox> bboxes = getFromBoundingBoxes();
 
+  // Debugging:
+  for (const auto & bbox : bboxes)
+    std::cout << "bbox = (" << bbox.first << ", " << bbox.second << ")" << std::endl;
+
   // Figure out how many "from" domains each processor owns.
   std::vector<unsigned int> froms_per_proc = getFromsPerProc();
+
+  // Debugging:
+  std::cout << "froms_per_proc = ";
+  for (const auto & val : froms_per_proc)
+    std::cout << val << " ";
+  std::cout << std::endl;
 
   ////////////////////
   // For every point in the local "to" domain, figure out which "from" domains
@@ -154,19 +164,33 @@ MultiAppNearestNodeTransfer::execute()
               nearest_max_distance = distance;
           }
 
+          std::cout << "The nearest_max_distance (over all bboxes) for Node " << node->id()
+                    << ", " << static_cast<Point&>(*node) << " = " << nearest_max_distance << std::endl;
+
           unsigned int from0 = 0;
           for (processor_id_type i_proc = 0; i_proc < n_processors();
                from0 += froms_per_proc[i_proc], i_proc++)
           {
             bool qp_found = false;
+
             for (unsigned int i_from = from0; i_from < from0 + froms_per_proc[i_proc] && !qp_found;
                  i_from++)
             {
 
               Real distance = bboxMinDistance(*node, bboxes[i_from]);
+              std::cout << "Testing bboxMinDistance = " << distance << " to bbox i_from = " << i_from << std::endl;
 
               if (distance <= nearest_max_distance || bboxes[i_from].contains_point(*node))
               {
+                // Which condition above actually got us here?
+                if (distance <= nearest_max_distance)
+                  std::cout << "distance = " << distance << " less than or equal to " << nearest_max_distance << std::endl;
+
+                if (bboxes[i_from].contains_point(*node))
+                  std::cout << "bboxes[" << i_from << "] contains point " << static_cast<Point&>(*node) << std::endl;
+                else
+                  std::cout << "bboxes[" << i_from << "] did not contain point " << static_cast<Point&>(*node) << std::endl;
+
                 std::pair<unsigned int, unsigned int> key(i_to, node->id());
                 node_index_map[i_proc][key] = outgoing_qps[i_proc].size();
                 outgoing_qps[i_proc].push_back(*node + _to_positions[i_to]);
