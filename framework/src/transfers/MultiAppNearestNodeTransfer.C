@@ -150,6 +150,11 @@ MultiAppNearestNodeTransfer::execute()
             target_local_nodes[i++] = node;
         }
 
+        // For error checking: keep track of all target_local_nodes
+        // which are successfully mapped to at least one domain where
+        // the nearest neighbor might be found.
+        std::set<Node *> local_nodes_found;
+
         for (const auto & node : target_local_nodes)
         {
           // Skip this node if the variable has no dofs at it.
@@ -196,6 +201,7 @@ MultiAppNearestNodeTransfer::execute()
                 node_index_map[i_proc][key] = outgoing_qps[i_proc].size();
                 outgoing_qps[i_proc].push_back(*node + _to_positions[i_to]);
                 qp_found = true;
+                local_nodes_found.insert(node);
               }
             }
 
@@ -209,6 +215,13 @@ MultiAppNearestNodeTransfer::execute()
 //              mooseError("BoundingBox for node ", node->id(), " at position ", static_cast<Point &>(*node), " not found.");
           }
         }
+
+        // By the time we get to here, we should have found at least
+        // one candidate BoundingBox for every node in the
+        // target_local_nodes array.
+        for (const auto & node : target_local_nodes)
+          if (!local_nodes_found.count(node))
+            mooseError("No candidate BoundingBoxes found for node ", node->id(), " at position ", static_cast<Point &>(*node));
       }
       else // Elemental
       {
@@ -272,7 +285,7 @@ MultiAppNearestNodeTransfer::execute()
       for (const auto & pr : m)
         {
           const auto & key = pr.first;
-          std::cout << "[" << pid << "][(" << key.first << ", " << dof_type_string << " id =" << key.second << ")] = " << pr.second << std::endl;
+          std::cout << "[" << pid << "][(i_to = " << key.first << ", " << dof_type_string << " id =" << key.second << ")] at vector index " << pr.second << std::endl;
         }
       // Go to next processor.
       pid++;
