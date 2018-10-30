@@ -117,6 +117,7 @@ MultiAppNearestNodeTransfer::execute()
   std::vector<std::map<std::pair<unsigned int, unsigned int>, unsigned int>> node_index_map(
       n_processors());
 
+  bool is_nodal = false;
   if (!_neighbors_cached)
   {
     for (unsigned int i_to = 0; i_to < _to_problems.size(); i_to++)
@@ -125,7 +126,7 @@ MultiAppNearestNodeTransfer::execute()
       unsigned int sys_num = to_sys->number();
       unsigned int var_num = to_sys->variable_number(_to_var_name);
       MeshBase * to_mesh = &_to_meshes[i_to]->getMesh();
-      bool is_nodal = to_sys->variable_type(var_num).family == LAGRANGE;
+      is_nodal = to_sys->variable_type(var_num).family == LAGRANGE;
 
       if (is_nodal)
       {
@@ -204,8 +205,8 @@ MultiAppNearestNodeTransfer::execute()
             // should be guaranteed, i.e. the Bbox we are using for
             // the max distance should always have a min which is
             // less.
-            if (!qp_found)
-              mooseError("BoundingBox for node ", node->id(), " at position ", static_cast<Point &>(*node), " not found.");
+//            if (!qp_found)
+//              mooseError("BoundingBox for node ", node->id(), " at position ", static_cast<Point &>(*node), " not found.");
           }
         }
       }
@@ -252,13 +253,30 @@ MultiAppNearestNodeTransfer::execute()
             // should be guaranteed, i.e. the Bbox we are using for
             // the max distance should always have a min which is
             // less.
-            if (!qp_found)
-              mooseError("BoundingBox for Elem ", elem->id(), " centroid = ", centroid, " not found.");
+//            if (!qp_found)
+//              mooseError("BoundingBox for Elem ", elem->id(), " centroid = ", centroid, " not found.");
           }
         }
       }
     }
   }
+
+  // We should be done building the node_index_map and outgoing_qps data structures.
+  // node_index_map = vector<map<pair<unsigned int, unsigned int>, unsigned int>>
+  unsigned int pid=0;
+  std::string dof_type_string = is_nodal ? "node" : "elem";
+  std::cout << "Printing entries of node_index_map:" << std::endl;
+  for (const auto & m : node_index_map)
+    {
+      std::cout << "Map entries for processor " << pid << std::endl;
+      for (const auto & pr : m)
+        {
+          const auto & key = pr.first;
+          std::cout << "[" << pid << "][(" << key.first << ", " << dof_type_string << " id =" << key.second << ")] = " << pr.second << std::endl;
+        }
+      // Go to next processor.
+      pid++;
+    }
 
   ////////////////////
   // Send local node/centroid positions off to the other processors and take
