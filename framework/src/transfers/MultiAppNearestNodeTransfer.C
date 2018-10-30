@@ -226,6 +226,11 @@ MultiAppNearestNodeTransfer::execute()
       }
       else // Elemental
       {
+        // For error checking: keep track of all local elements
+        // which are successfully mapped to at least one domain where
+        // the nearest neighbor might be found.
+        std::set<Elem *> local_elems_found;
+
         for (auto & elem : as_range(to_mesh->local_elements_begin(), to_mesh->local_elements_end()))
         {
           Point centroid = elem->centroid();
@@ -258,6 +263,7 @@ MultiAppNearestNodeTransfer::execute()
                 node_index_map[i_proc][key] = outgoing_qps[i_proc].size();
                 outgoing_qps[i_proc].push_back(centroid + _to_positions[i_to]);
                 qp_found = true;
+                local_elems_found.insert(elem);
               }
             }
 
@@ -271,6 +277,13 @@ MultiAppNearestNodeTransfer::execute()
 //              mooseError("BoundingBox for Elem ", elem->id(), " centroid = ", centroid, " not found.");
           }
         }
+
+        // Verify that we found at least one candidate bounding
+        // box for each local element with dofs for the current
+        // variable in the current System.
+        for (auto & elem : as_range(to_mesh->local_elements_begin(), to_mesh->local_elements_end()))
+          if (elem->n_dofs(sys_num, var_num) && !local_elems_found.count(elem))
+            mooseError("No candidate BoundingBoxes found for Elem ", elem->id(), ", centroid = ", elem->centroid());
       }
     }
   }
