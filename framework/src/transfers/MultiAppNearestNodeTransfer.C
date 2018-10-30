@@ -84,18 +84,8 @@ MultiAppNearestNodeTransfer::execute()
   // Get the bounding boxes for the "from" domains.
   std::vector<BoundingBox> bboxes = getFromBoundingBoxes();
 
-  // Debugging:
-  for (const auto & bbox : bboxes)
-    std::cout << "bbox = (" << bbox.first << ", " << bbox.second << ")" << std::endl;
-
   // Figure out how many "from" domains each processor owns.
   std::vector<unsigned int> froms_per_proc = getFromsPerProc();
-
-  // Debugging:
-  std::cout << "froms_per_proc = ";
-  for (const auto & val : froms_per_proc)
-    std::cout << val << " ";
-  std::cout << std::endl;
 
   ////////////////////
   // For every point in the local "to" domain, figure out which "from" domains
@@ -117,7 +107,6 @@ MultiAppNearestNodeTransfer::execute()
   std::vector<std::map<std::pair<unsigned int, unsigned int>, unsigned int>> node_index_map(
       n_processors());
 
-  bool is_nodal = false;
   if (!_neighbors_cached)
   {
     for (unsigned int i_to = 0; i_to < _to_problems.size(); i_to++)
@@ -126,7 +115,7 @@ MultiAppNearestNodeTransfer::execute()
       unsigned int sys_num = to_sys->number();
       unsigned int var_num = to_sys->variable_number(_to_var_name);
       MeshBase * to_mesh = &_to_meshes[i_to]->getMesh();
-      is_nodal = to_sys->variable_type(var_num).family == LAGRANGE;
+      bool is_nodal = to_sys->variable_type(var_num).family == LAGRANGE;
 
       if (is_nodal)
       {
@@ -170,9 +159,6 @@ MultiAppNearestNodeTransfer::execute()
               nearest_max_distance = distance;
           }
 
-          std::cout << "The nearest_max_distance (over all bboxes) for Node " << node->id()
-                    << ", " << static_cast<Point&>(*node) << " = " << nearest_max_distance << std::endl;
-
           unsigned int from0 = 0;
           for (processor_id_type i_proc = 0; i_proc < n_processors();
                from0 += froms_per_proc[i_proc], i_proc++)
@@ -184,19 +170,9 @@ MultiAppNearestNodeTransfer::execute()
             {
 
               Real distance = bboxMinDistance(*node, bboxes[i_from]);
-              std::cout << "Testing bboxMinDistance = " << distance << " to bbox i_from = " << i_from << std::endl;
 
               if (distance <= nearest_max_distance || bboxes[i_from].contains_point(*node))
               {
-                // Which condition above actually got us here?
-                if (distance <= nearest_max_distance)
-                  std::cout << "distance = " << distance << " less than or equal to " << nearest_max_distance << std::endl;
-
-                if (bboxes[i_from].contains_point(*node))
-                  std::cout << "bboxes[" << i_from << "] contains point " << static_cast<Point&>(*node) << std::endl;
-                else
-                  std::cout << "bboxes[" << i_from << "] did not contain point " << static_cast<Point&>(*node) << std::endl;
-
                 std::pair<unsigned int, unsigned int> key(i_to, node->id());
                 node_index_map[i_proc][key] = outgoing_qps[i_proc].size();
                 outgoing_qps[i_proc].push_back(*node + _to_positions[i_to]);
@@ -204,15 +180,6 @@ MultiAppNearestNodeTransfer::execute()
                 local_nodes_found.insert(node);
               }
             }
-
-            // if (!qp_found), this means something went wrong, since
-            // for a given BBox A,
-            // bboxMinDistance(p,A) <= bboxMaxDistance(p,A)
-            // should be guaranteed, i.e. the Bbox we are using for
-            // the max distance should always have a min which is
-            // less.
-//            if (!qp_found)
-//              mooseError("BoundingBox for node ", node->id(), " at position ", static_cast<Point &>(*node), " not found.");
           }
         }
 
@@ -266,15 +233,6 @@ MultiAppNearestNodeTransfer::execute()
                 local_elems_found.insert(elem);
               }
             }
-
-            // if (!qp_found), this means something went wrong, since
-            // for a given BBox A,
-            // bboxMinDistance(p,A) <= bboxMaxDistance(p,A)
-            // should be guaranteed, i.e. the Bbox we are using for
-            // the max distance should always have a min which is
-            // less.
-//            if (!qp_found)
-//              mooseError("BoundingBox for Elem ", elem->id(), " centroid = ", centroid, " not found.");
           }
         }
 
@@ -287,23 +245,6 @@ MultiAppNearestNodeTransfer::execute()
       }
     }
   }
-
-  // We should be done building the node_index_map and outgoing_qps data structures.
-  // node_index_map = vector<map<pair<unsigned int, unsigned int>, unsigned int>>
-  unsigned int pid=0;
-  std::string dof_type_string = is_nodal ? "node" : "elem";
-  std::cout << "Printing entries of node_index_map:" << std::endl;
-  for (const auto & m : node_index_map)
-    {
-      std::cout << "Map entries for processor " << pid << std::endl;
-      for (const auto & pr : m)
-        {
-          const auto & key = pr.first;
-          std::cout << "[" << pid << "][(i_to = " << key.first << ", " << dof_type_string << " id =" << key.second << ")] at vector index " << pr.second << std::endl;
-        }
-      // Go to next processor.
-      pid++;
-    }
 
   ////////////////////
   // Send local node/centroid positions off to the other processors and take
