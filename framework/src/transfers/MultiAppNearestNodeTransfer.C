@@ -218,9 +218,10 @@ MultiAppNearestNodeTransfer::execute()
 
         // By the time we get to here, we should have found at least
         // one candidate BoundingBox for every node in the
-        // target_local_nodes array.
+        // target_local_nodes array that has dofs for the current
+        // variable in the current System.
         for (const auto & node : target_local_nodes)
-          if (!local_nodes_found.count(node))
+          if (node->n_dofs(sys_num, var_num) && !local_nodes_found.count(node))
             mooseError("No candidate BoundingBoxes found for node ", node->id(), " at position ", static_cast<Point &>(*node));
       }
       else // Elemental
