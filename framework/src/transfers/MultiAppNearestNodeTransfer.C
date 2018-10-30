@@ -199,10 +199,11 @@ MultiAppNearestNodeTransfer::execute()
             }
 
             // if (!qp_found), this means something went wrong, since
-            // for a given BBox A, bboxMinDistance(p,A) <=
-            // bboxMaxDistance(p,A) should be guaranteed, i.e. the
-            // Bbox we are using for the max distance should always
-            // have a min which is less.
+            // for a given BBox A,
+            // bboxMinDistance(p,A) <= bboxMaxDistance(p,A)
+            // should be guaranteed, i.e. the Bbox we are using for
+            // the max distance should always have a min which is
+            // less.
             if (!qp_found)
               mooseError("BoundingBox for node ", node->id(), " at position ", static_cast<Point &>(*node), " not found.");
           }
@@ -236,7 +237,7 @@ MultiAppNearestNodeTransfer::execute()
                  i_from++)
             {
               Real distance = bboxMinDistance(centroid, bboxes[i_from]);
-              if (distance < nearest_max_distance || bboxes[i_from].contains_point(centroid))
+              if (distance <= nearest_max_distance || bboxes[i_from].contains_point(centroid))
               {
                 std::pair<unsigned int, unsigned int> key(i_to, elem->id());
                 node_index_map[i_proc][key] = outgoing_qps[i_proc].size();
@@ -244,6 +245,15 @@ MultiAppNearestNodeTransfer::execute()
                 qp_found = true;
               }
             }
+
+            // if (!qp_found), this means something went wrong, since
+            // for a given BBox A,
+            // bboxMinDistance(p,A) <= bboxMaxDistance(p,A)
+            // should be guaranteed, i.e. the Bbox we are using for
+            // the max distance should always have a min which is
+            // less.
+            if (!qp_found)
+              mooseError("BoundingBox for Elem ", elem->id(), " centroid = ", centroid, " not found.");
           }
         }
       }
