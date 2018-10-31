@@ -84,8 +84,19 @@ MultiAppNearestNodeTransfer::execute()
   // Get the bounding boxes for the "from" domains.
   std::vector<BoundingBox> bboxes = getFromBoundingBoxes();
 
+  // Debugging:
+  for (const auto & bbox : bboxes)
+    std::cout << "bbox = (" << bbox.first << ", " << bbox.second << ")" << std::endl;
+
   // Figure out how many "from" domains each processor owns.
   std::vector<unsigned int> froms_per_proc = getFromsPerProc();
+
+  // Debugging:
+  std::cout << "froms_per_proc = ";
+  for (const auto & val : froms_per_proc)
+    std::cout << val << " ";
+  std::cout << std::endl;
+
 
   ////////////////////
   // For every point in the local "to" domain, figure out which "from" domains
@@ -139,6 +150,17 @@ MultiAppNearestNodeTransfer::execute()
             target_local_nodes[i++] = node;
         }
 
+        // Debugging: compare target_boundary nodes to
+        // to_mesh->local_node_ptr_range(). Is one of these displaced
+        // while the other one is not???
+        std::cout << "to_mesh has " << to_mesh->parallel_n_nodes() << " total nodes." << std::endl;
+        std::cout << "target_local_nodes = " << std::endl;
+        for (const auto & node : target_local_nodes)
+          std::cout << static_cast<Point&>(*node) << std::endl;
+        std::cout << "to_mesh->local_node_ptr_range() = " << std::endl;
+        for (auto & node : to_mesh->local_node_ptr_range())
+          std::cout << static_cast<Point&>(*node) << std::endl;
+
         // For error checking: keep track of all target_local_nodes
         // which are successfully mapped to at least one domain where
         // the nearest neighbor might be found.
@@ -159,6 +181,9 @@ MultiAppNearestNodeTransfer::execute()
               nearest_max_distance = distance;
           }
 
+          std::cout << "The nearest_max_distance (over all bboxes) for Node " << node->id()
+                    << ", " << static_cast<Point&>(*node) << " = " << nearest_max_distance << std::endl;
+
           unsigned int from0 = 0;
           for (processor_id_type i_proc = 0; i_proc < n_processors();
                from0 += froms_per_proc[i_proc], i_proc++)
@@ -170,9 +195,19 @@ MultiAppNearestNodeTransfer::execute()
             {
 
               Real distance = bboxMinDistance(*node, bboxes[i_from]);
+              std::cout << "Testing bboxMinDistance = " << distance << " to bbox i_from = " << i_from << std::endl;
 
               if (distance <= nearest_max_distance || bboxes[i_from].contains_point(*node))
               {
+                // Which condition above actually got us here?
+                if (distance <= nearest_max_distance)
+                  std::cout << "distance = " << distance << " less than or equal to " << nearest_max_distance << std::endl;
+
+                if (bboxes[i_from].contains_point(*node))
+                  std::cout << "bboxes[" << i_from << "] contains point " << static_cast<Point&>(*node) << std::endl;
+                else
+                  std::cout << "bboxes[" << i_from << "] did not contain point " << static_cast<Point&>(*node) << std::endl;
+
                 std::pair<unsigned int, unsigned int> key(i_to, node->id());
                 node_index_map[i_proc][key] = outgoing_qps[i_proc].size();
                 outgoing_qps[i_proc].push_back(*node + _to_positions[i_to]);
@@ -251,6 +286,22 @@ MultiAppNearestNodeTransfer::execute()
       }
     }
   }
+
+  // We should be done building the node_index_map and outgoing_qps data structures.
+  // node_index_map = vector<map<pair<unsigned int, unsigned int>, unsigned int>>
+  unsigned int pid=0;
+  std::cout << "Printing entries of node_index_map:" << std::endl;
+  for (const auto & m : node_index_map)
+    {
+      std::cout << "Map entries for processor " << pid << std::endl;
+      for (const auto & pr : m)
+        {
+          const auto & key = pr.first;
+          std::cout << "[" << pid << "][(i_to = " << key.first << ", elem/node id =" << key.second << ")] at vector index " << pr.second << std::endl;
+        }
+      // Go to next processor.
+      pid++;
+    }
 
   ////////////////////
   // Send local node/centroid positions off to the other processors and take
@@ -506,6 +557,9 @@ MultiAppNearestNodeTransfer::execute()
               _cached_qp_inds[node->id()] = qp_ind;
             }
           }
+
+          // Debugging: is this where the 0 values in the sub are coming from?
+          std::cout << "For node " << node->id() << ", best_val = " << best_val << std::endl;
         }
 
         else
