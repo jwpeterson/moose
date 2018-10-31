@@ -1,3 +1,43 @@
+# The mesh for the master app consists of two disconnected 2D parts
+# arranged vertically, the top part consists of 4 elements in a 2x2
+# configuration while the bottom part is a single 2D element.  The
+# subdomains (blocks) and boundaries are numbered as follows:
+#
+#          1
+#  -----------------
+# |    block 1      |
+#  -----------------
+#          2
+#
+#          3
+#  -----------------
+# |    block 2      |
+#  -----------------
+#          4
+#
+# and we solve the diffusion equation on each piece with Dirichlet BCs
+# on each of the numbered boundaries. The true solution is therefore
+# u = a*y + b in each piece, for appropriate constants a, b. The
+# spatial coordinates of the two pieces are:
+#
+#            -----------------* (8,0)
+#           |    block 1      |
+#    (0,-1) *-----------------
+#
+#            -----------------* (8,-2)
+#           |    block 2      |
+#    (0,-3) *-----------------
+#
+#           o--------o--------o  <= 1D SubApp @ y=-4 with two elements
+#
+# There is a single 1D SubApp set up at the position y=-4 (as shown)
+# which has 4 different values transferred to it, one corresponding to
+# each of the boundaries 1-4. The actual values are controlled by
+# the DirichletBCs, so we should get:
+# from_master_1 = 4
+# from_master_2 = 3
+# from_master_3 = 2
+# from_master_4 = 1
 [Mesh]
   file = 2blk.e
 []
