@@ -47,6 +47,13 @@
   [../]
 []
 
+[AuxVariables]
+  [./pid]
+    order = constant
+    family = monomial
+  [../]
+[]
+
 [Kernels]
   [./diff]
     type = Diffusion
@@ -54,27 +61,34 @@
   [../]
 []
 
+[AuxKernels]
+  [./pid]
+    type = ProcessorIDAux
+    variable = pid
+  [../]
+[]
+
 [BCs]
-  [./left_1]
+  [./top_1]
     type = DirichletBC
     variable = u
     boundary = '1'
     value = 4
   [../]
-  [./left_2]
+  [./top_2]
     type = DirichletBC
     variable = u
     boundary = '2'
     value = 3
   [../]
 
-  [./right_3]
+  [./bot_3]
     type = DirichletBC
     variable = u
     boundary = '3'
     value = 2
   [../]
-  [./right_4]
+  [./bot_4]
     type = DirichletBC
     variable = u
     boundary = '4'
