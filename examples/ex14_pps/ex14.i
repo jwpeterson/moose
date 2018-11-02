@@ -7,11 +7,12 @@
   xmax = 1.0
   ymin = 0.0
   ymax = 1.0
+  elem_type = QUAD9
 []
 
 [Variables]
   [./forced]
-    order = FIRST
+    order = SECOND
     family = LAGRANGE
   [../]
 []
@@ -85,7 +86,7 @@
     type = NumDOFs
   [../]
   [./integral]
-    type = ElementL2Error
+    type = ElementH1Error # ElementL2Error
     variable = forced
     function = bc_func
   [../]
